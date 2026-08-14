@@ -1,0 +1,15 @@
+{
+  "name": "medapp-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"@medapp/admin\" --filter \"@medapp/paciente\" dev",
+    "dev:admin": "pnpm --filter @medapp/admin dev",
+    "dev:portal": "pnpm --filter @medapp/paciente dev",
+    "build": "pnpm --filter @medapp/shared build && pnpm --filter \"@medapp/admin\" --filter \"@medapp/paciente\" build",
+    "lint": "pnpm -r lint"
+  },
+  "pnpm": {
+    "overrides": {}
+  }
+}

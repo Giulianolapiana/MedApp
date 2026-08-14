@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* ======================================================================
+   MedApp Design System — Dark Theme for blenexIA
+   ====================================================================== */
+
+@theme {
+  /* Surface colors */
+  --color-surface-base: #121212;
+  --color-surface-elevated: #1a1a1a;
+  --color-surface-overlay: #242424;
+
+  /* Accent */
+  --color-accent: #E53935;
+  --color-accent-hover: #EF5350;
+  --color-accent-muted: rgba(229, 57, 53, 0.15);
+
+  /* Semantic — appointment states */
+  --color-estado-pendiente: #FFA726;
+  --color-estado-confirmado: #66BB6A;
+  --color-estado-cancelado: #EF5350;
+  --color-estado-asistido: #26A69A;
+  --color-estado-no-show: #AB47BC;
+
+  /* Text */
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #9E9E9E;
+  --color-text-muted: #616161;
+
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-hover: rgba(255, 255, 255, 0.2);
+
+  /* Font */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---- Base styles ---- */
+body {
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Scrollbar (Webkit) ---- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
