@@ -1,0 +1,15 @@
+{
+  "name": "@medapp/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./supabase": "./src/lib/supabase.ts",
+    "./types": "./src/types/database.types.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3"
+  }
+}
