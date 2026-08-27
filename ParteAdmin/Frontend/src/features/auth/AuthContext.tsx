@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
+import { fetchApi } from "../../lib/api";
 import type { RolUsuario } from "../../types/database.types";
 
 // ---------------------------------------------------------------------------
@@ -41,21 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch the user's admin profile from usuarios_administrativos
+  // Fetch the user's admin profile from backend
   async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("usuarios_administrativos")
-      .select("id, clinica_id, nombre, rol")
-      .eq("id", userId)
-      .single();
-
-    if (error || !data) {
+    try {
+      const { user: profileData } = await fetchApi<any>("/auth/me");
+      setProfile(profileData);
+    } catch (error) {
       console.error("Error al obtener perfil:", error);
       setProfile(null);
-      return;
     }
-
-    setProfile(data);
   }
 
   useEffect(() => {

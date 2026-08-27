@@ -3,6 +3,8 @@ import { Loader2, Download, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "../../../lib/supabase";
 import type { Database } from "../../../types/database.types";
 
+import { fetchApi } from "../../../lib/api";
+
 type BackupLog = Database["public"]["Tables"]["backups_auditoria"]["Row"];
 
 export function BackupsTab() {
@@ -17,27 +19,10 @@ export function BackupsTab() {
   async function fetchLogs() {
     try {
       setLoading(true);
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("No autenticado");
-
-      const { data: adminData } = await supabase
-        .from("usuarios_administrativos")
-        .select("clinica_id")
-        .eq("id", userData.user.id)
-        .single();
-        
-      if (!adminData) throw new Error("Error al obtener clínica");
-
-      const { data, error } = await supabase
-        .from("backups_auditoria")
-        .select("*")
-        .eq("clinica_id", adminData.clinica_id)
-        .order("creado_en", { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchApi<BackupLog[]>("/backups");
       setLogs(data || []);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error al cargar backups");
     } finally {
       setLoading(false);
     }

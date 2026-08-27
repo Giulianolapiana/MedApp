@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
-import { supabase } from "../../../lib/supabase";
+import { fetchApi } from "../../../lib/api";
 import type { Database } from "../../../types/database.types";
 import type { Profesional } from "../hooks/useAgenda";
 
@@ -33,24 +33,8 @@ export function TurnoModal({ onClose, onSave, profesionales, initialDate, initia
   useEffect(() => {
     async function fetchPacientes() {
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) return;
-        
-        const { data: adminData } = await supabase
-          .from("usuarios_administrativos")
-          .select("clinica_id")
-          .eq("id", userData.user.id)
-          .single();
-          
-        if (adminData) {
-          const { data } = await supabase
-            .from("pacientes")
-            .select("*")
-            .eq("clinica_id", adminData.clinica_id)
-            .eq("activo", true)
-            .order("nombre_completo");
-          setPacientes(data || []);
-        }
+        const data = await fetchApi<Paciente[]>("/pacientes");
+        setPacientes(data || []);
       } catch (err) {
         console.error("Error fetching pacientes", err);
       } finally {
