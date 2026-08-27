@@ -10,7 +10,7 @@ const DIAS = [
   { id: 4, nombre: "Jueves" },
   { id: 5, nombre: "Viernes" },
   { id: 6, nombre: "Sábado" },
-  { id: 7, nombre: "Domingo" },
+  { id: 0, nombre: "Domingo" },
 ];
 
 export function DisponibilidadTab() {
@@ -57,8 +57,8 @@ export function DisponibilidadTab() {
         clinica_id: clinicaId,
         profesional_id: selectedProfId,
         dia_semana: dia.id,
-        horario_inicio: `${current.inicio}:00`,
-        horario_fin: `${current.fin}:00`,
+        horario_inicio: current.inicio,
+        horario_fin: current.fin,
         habilitado: current.habilitado,
       };
     });

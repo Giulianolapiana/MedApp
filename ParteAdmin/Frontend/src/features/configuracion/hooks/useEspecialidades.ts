@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../../lib/supabase";
+import { fetchApi } from "../../../lib/api";
 import type { EspecialidadRow } from "../../../types/database.types";
 
 export function useEspecialidades() {
   const [especialidades, setEspecialidades] = useState<EspecialidadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [clinicaId, setClinicaId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEspecialidades();
@@ -16,27 +15,7 @@ export function useEspecialidades() {
     try {
       setLoading(true);
       setError(null);
-      
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("No autenticado");
-
-      const { data: adminData } = await supabase
-        .from("usuarios_administrativos")
-        .select("clinica_id")
-        .eq("id", userData.user.id)
-        .single();
-        
-      if (!adminData) throw new Error("Error al obtener clínica");
-      
-      setClinicaId(adminData.clinica_id);
-
-      const { data, error: err } = await supabase
-        .from("especialidades")
-        .select("*")
-        .eq("clinica_id", adminData.clinica_id)
-        .order("nombre");
-
-      if (err) throw err;
+      const data = await fetchApi<EspecialidadRow[]>("/especialidades/admin");
       setEspecialidades(data || []);
     } catch (err: any) {
       console.error("Error al cargar especialidades:", err);
@@ -47,22 +26,12 @@ export function useEspecialidades() {
   };
 
   const createEspecialidad = async (nombre: string) => {
-    if (!clinicaId) return;
     try {
       setError(null);
-      const { error: err } = await supabase.from("especialidades").insert([
-        {
-          clinica_id: clinicaId,
-          nombre,
-        },
-      ]);
-
-      if (err) {
-        if (err.code === "23505") { // Unique violation
-            throw new Error("Ya existe una especialidad con ese nombre");
-        }
-        throw err;
-      }
+      await fetchApi("/especialidades", {
+        method: "POST",
+        body: JSON.stringify({ nombre }),
+      });
       await fetchEspecialidades();
     } catch (err: any) {
       console.error("Error al crear especialidad:", err);
@@ -74,8 +43,9 @@ export function useEspecialidades() {
   const deleteEspecialidad = async (id: string) => {
     try {
       setError(null);
-      const { error: err } = await supabase.from("especialidades").delete().eq("id", id);
-      if (err) throw err;
+      await fetchApi(`/especialidades/${id}`, {
+        method: "DELETE",
+      });
       setEspecialidades(especialidades.filter((e) => e.id !== id));
     } catch (err: any) {
       console.error("Error al eliminar especialidad:", err);
