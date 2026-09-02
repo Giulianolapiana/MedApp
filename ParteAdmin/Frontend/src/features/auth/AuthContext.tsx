@@ -18,6 +18,7 @@ interface UserProfile {
   clinica_id: string;
   nombre: string;
   rol: RolUsuario;
+  profesional_id?: string;
 }
 
 interface AuthContextValue {
@@ -58,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
-        fetchProfile(s.user.id);
+        fetchProfile(s.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     // 2. Listen for auth state changes (login, logout, token refresh)

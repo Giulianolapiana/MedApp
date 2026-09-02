@@ -11,7 +11,7 @@ const START_HOUR = 8; // 08:00 AM
 const END_HOUR = 20; // 08:00 PM
 const SLOT_DURATION_MINS = 30; // 30 mins base, configurable by doctor later
 
-export function TimeGrid({ currentDate, turnos }: TimeGridProps) {
+export function TimeGrid({ currentDate, turnos, onTurnoClick }: TimeGridProps & { onTurnoClick?: (turno: Turno) => void }) {
   // 1. Generate the 7 days of the week starting from Monday
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
@@ -52,14 +52,14 @@ export function TimeGrid({ currentDate, turnos }: TimeGridProps) {
     };
   };
 
-  const getBadgeColor = (estado: string) => {
-    switch (estado) {
-      case "pendiente": return "bg-amber-500/10 border-amber-500/20 text-amber-500";
-      case "confirmado": return "bg-emerald-500/10 border-emerald-500/20 text-emerald-500";
-      case "asistido": return "bg-teal-500/10 border-teal-500/20 text-teal-500";
-      case "cancelado": return "bg-red-500/10 border-red-500/20 text-red-500";
-      case "no_show": return "bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-500";
-      default: return "bg-blue-500/10 border-blue-500/20 text-blue-500";
+  const getBadgeStyle = (estado: string) => {
+    switch (estado.toLowerCase()) {
+      case "pendiente": return "border-l-amber-500 bg-amber-500/20 text-amber-50";
+      case "confirmado": return "border-l-emerald-500 bg-emerald-500/20 text-emerald-50";
+      case "asistido": return "border-l-teal-500 bg-teal-500/20 text-teal-50";
+      case "cancelado": return "border-l-red-500 bg-red-500/20 text-red-50";
+      case "no_show": return "border-l-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-50";
+      default: return "border-l-blue-500 bg-blue-500/20 text-blue-50";
     }
   };
 
@@ -113,16 +113,19 @@ export function TimeGrid({ currentDate, turnos }: TimeGridProps) {
           <div
             key={turno.id}
             style={getGridStyle(turno)}
-            className={`z-10 m-0.5 p-2 rounded-lg border ${getBadgeColor(turno.estado)} flex flex-col overflow-hidden hover:opacity-80 transition-opacity cursor-pointer group`}
+            onClick={onTurnoClick ? () => onTurnoClick(turno) : undefined}
+            className={`z-10 m-0.5 p-1 px-1.5 rounded-r-md rounded-l-sm border-l-4 ${getBadgeStyle(turno.estado)} flex flex-col overflow-hidden hover:brightness-125 transition-all cursor-pointer shadow-sm`}
           >
-            <span className="text-xs font-semibold truncate">
-              {turno.pacientes?.nombre_completo || "Sin Nombre"}
-            </span>
-            <span className="text-[10px] opacity-70 truncate mt-1">
-              {turno.profesionales?.nombre}
-            </span>
-            <span className="text-[10px] font-bold mt-auto hidden group-hover:block uppercase tracking-wider">
-              {turno.estado}
+            <div className="flex justify-between items-center gap-1 w-full">
+              <span className="text-[11px] font-semibold truncate leading-none">
+                {turno.pacientes?.nombre_completo || "Sin Nombre"}
+              </span>
+              <span className="text-[8px] font-bold uppercase tracking-wider opacity-90 leading-none shrink-0 bg-black/20 px-1 py-0.5 rounded">
+                {turno.estado}
+              </span>
+            </div>
+            <span className="text-[9px] text-white/70 truncate leading-none mt-1">
+              Dr. {turno.profesionales?.nombre}
             </span>
           </div>
         ))}

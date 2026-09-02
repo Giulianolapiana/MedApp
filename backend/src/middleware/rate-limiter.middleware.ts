@@ -4,7 +4,7 @@ import { Context, Next } from 'hono';
 const rateLimitStore = new Map<string, { count: number; timestamp: number }>();
 
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS = 5; // Max 5 requests per IP per window
+const MAX_REQUESTS = 500; // Max 500 requests per IP per window (aumentado para pruebas)
 
 export const rateLimiterMiddleware = async (c: Context, next: Next) => {
   // In production, we'd get the real IP from X-Forwarded-For if behind a proxy

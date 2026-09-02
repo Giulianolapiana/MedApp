@@ -96,8 +96,8 @@ export class TurnosRepository extends BaseRepository<typeof turnos> {
         )
       );
 
-    // Solo es conflicto si el turno no está cancelado
-    return results.find(t => t.estado !== 'cancelado') || null;
+    // Solo es conflicto si el turno está pendiente o confirmado
+    return results.find(t => ['pendiente', 'confirmado'].includes(t.estado)) || null;
   }
 
   async countByClinica(

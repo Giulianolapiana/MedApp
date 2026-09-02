@@ -27,7 +27,13 @@ export function useProfesionales() {
     }
   }
 
-  async function createProfesional(profesional: Omit<ProfesionalInsert, "clinica_id">) {
+  type CreateProfesionalPayload = Omit<ProfesionalInsert, "clinica_id"> & { 
+    crear_acceso?: boolean; 
+    email_acceso?: string; 
+    password_acceso?: string;
+  };
+
+  async function createProfesional(profesional: CreateProfesionalPayload) {
     try {
       const data = await fetchApi<Profesional>("/profesionales", {
         method: "POST",
@@ -43,7 +49,7 @@ export function useProfesionales() {
   async function updateProfesional(id: string, updates: Partial<ProfesionalInsert>) {
     try {
       const data = await fetchApi<Profesional>(`/profesionales/${id}`, {
-        method: "PATCH",
+        method: "PUT",
         body: JSON.stringify(updates),
       });
       setProfesionales((prev) => 

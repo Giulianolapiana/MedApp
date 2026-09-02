@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const CrearTurnoRequest = z.object({
   profesional_id: z.string().uuid('ID de profesional inválido'),
+  clinica_id: z.string().uuid('ID de clinica inválido').optional(),
   fecha_hora_inicio: z.string().min(1, 'La fecha y hora de inicio es requerida'),
   canal_reserva: z.enum(['web', 'whatsapp', 'manual']).default('web'),
   // Datos del paciente (se crea o se busca)

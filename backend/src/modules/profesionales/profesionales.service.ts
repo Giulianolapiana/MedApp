@@ -1,7 +1,12 @@
 import { db } from '../../core/database.js';
-import { NotFoundError } from '../../core/errors.js';
+import { NotFoundError, ValidationError } from '../../core/errors.js';
 import { ProfesionalesRepository } from './profesionales.repository.js';
 import { CrearProfesionalType, ActualizarProfesionalType } from './profesionales.schemas.js';
+import { createClient } from '@supabase/supabase-js';
+import { ENV } from '../../core/config.js';
+import { usuariosAdministrativos } from '../../db/schema.js';
+
+const supabaseAdmin = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY);
 
 export class ProfesionalesService {
   private repo = new ProfesionalesRepository(db);
@@ -20,11 +25,47 @@ export class ProfesionalesService {
   }
 
   async crear(data: CrearProfesionalType, clinicaId: string) {
+    let finalUsuarioId = data.usuario_id ?? null;
+
+    if (data.crear_acceso) {
+      if (!data.email_acceso || !data.password_acceso) {
+        throw new ValidationError('Email y contraseña son requeridos para crear el acceso');
+      }
+
+      // Crear en Supabase Auth
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: data.email_acceso,
+        password: data.password_acceso,
+        email_confirm: true,
+      });
+
+      if (authError) {
+        if (authError.message.includes('already been registered')) {
+          throw new ValidationError('El correo ingresado ya está en uso por otro usuario');
+        }
+        throw new Error(`Error en Auth: ${authError.message}`);
+      }
+
+      if (!authUser.user) {
+        throw new Error('No se pudo crear el usuario en Supabase');
+      }
+
+      finalUsuarioId = authUser.user.id;
+
+      // Insertar en usuarios_administrativos
+      await db.insert(usuariosAdministrativos).values({
+        id: finalUsuarioId,
+        nombre: data.nombre,
+        rol: 'PROFESIONAL',
+        clinica_id: clinicaId,
+      });
+    }
+
     return this.repo.create({
       nombre: data.nombre,
       especialidad: data.especialidad,
       clinica_id: clinicaId,
-      usuario_id: data.usuario_id ?? null,
+      usuario_id: finalUsuarioId,
       google_calendar_id: data.google_calendar_id ?? null,
     });
   }

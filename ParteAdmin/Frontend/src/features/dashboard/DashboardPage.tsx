@@ -2,8 +2,18 @@ import { LayoutDashboard, Clock, UserRound, ArrowRight, Loader2 } from "lucide-r
 import { useDashboardStats } from "./useDashboardStats";
 import type { EstadoTurno } from "../../types/database.types";
 
+import { useAuth } from "../../features/auth/AuthContext";
+import { Navigate } from "react-router-dom";
+
 export function DashboardPage() {
-  const { turnosHoy, ocupacion, pendientes, noShowsHoy, proximosTurnos, loading, error } = useDashboardStats();
+  const { profile } = useAuth();
+  
+  if (profile?.rol === "PROFESIONAL") {
+    return <Navigate to="/agenda" replace />;
+  }
+
+  const stats = useDashboardStats();
+  const { turnosHoy, ocupacion, pendientes, noShowsHoy, proximosTurnos, loading, error } = stats;
 
   if (loading) {
     return (
@@ -33,11 +43,15 @@ export function DashboardPage() {
       </div>
 
       {/* KPI Widgets */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <KpiCard label="Turnos hoy" value={turnosHoy} />
-        <KpiCard label="Ocupación (Est.)" value={`${ocupacion}%`} />
         <KpiCard label="Pendientes" value={pendientes} />
+        <KpiCard label="Confirmados" value={stats.confirmados ?? 0} />
+        <KpiCard label="Cancelados" value={stats.cancelados ?? 0} isAlert={stats.tasaCancelacion > 20} />
         <KpiCard label="No-show hoy" value={noShowsHoy} isAlert={noShowsHoy > 0} />
+        <KpiCard label="Asistencia" value={`${stats.tasaAsistencia ?? 0}%`} />
+        <KpiCard label="Cancelación" value={`${stats.tasaCancelacion ?? 0}%`} />
+        <KpiCard label="Ocupación (Est.)" value={`${ocupacion}%`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

@@ -10,6 +10,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url("Debe ser una URL de conexión PostgreSQL válida"),
   SUPABASE_URL: z.string().url("Debe ser la URL de tu proyecto Supabase"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Service Role Key es obligatoria"),
+  N8N_WEBHOOK_URL: z.string().url().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

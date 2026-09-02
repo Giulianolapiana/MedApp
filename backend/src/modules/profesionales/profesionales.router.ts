@@ -7,8 +7,8 @@ import { requireRole } from '../../middleware/require-role.js';
 
 const profesionalesRouter = new Hono();
 
-// GET /api/v1/profesionales/admin — ADMIN/RECEPCION
-profesionalesRouter.get('/admin', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION']), async (c) => {
+// GET /api/v1/profesionales/admin — ADMIN/RECEPCION/PROFESIONAL
+profesionalesRouter.get('/admin', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION', 'PROFESIONAL']), async (c) => {
   const user = c.get('user' as never) as AuthUser;
   const result = await profesionalesService.listar(user.clinica_id);
   return c.json({ data: result });

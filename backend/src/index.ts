@@ -64,7 +64,9 @@ console.log(`
 
 Rutas disponibles:
   POST   /api/v1/auth/login
+  POST   /api/v1/auth/registro
   POST   /api/v1/auth/refresh
+  POST   /api/v1/auth/logout
   GET    /api/v1/auth/me
   GET    /api/v1/especialidades
   POST   /api/v1/especialidades
