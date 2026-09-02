@@ -73,5 +73,17 @@ export function useAgenda(currentDate: Date, selectedProfesionalId: string | "AL
     }
   }
 
-  return { turnos, profesionales, loading, error, createTurno };
+  async function updateTurnoStatus(turnoId: string, nuevoEstado: string, motivo?: string) {
+    try {
+      await fetchApi(`/turnos/${turnoId}/estado`, {
+        method: "PATCH",
+        body: JSON.stringify({ nuevo_estado: nuevoEstado, motivo }),
+      });
+      setRefreshCounter((prev) => prev + 1);
+    } catch (err: any) {
+      throw new Error(err.message || "Error al actualizar estado del turno");
+    }
+  }
+
+  return { turnos, profesionales, loading, error, createTurno, updateTurnoStatus };
 }

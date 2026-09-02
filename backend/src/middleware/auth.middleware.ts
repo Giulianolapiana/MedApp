@@ -15,6 +15,7 @@ export interface AuthUser {
   clinica_id: string;
   nombre: string;
   rol: 'ADMINISTRADOR' | 'RECEPCION' | 'PROFESIONAL';
+  profesional_id?: string;
 }
 
 /**
@@ -50,12 +51,26 @@ export const authMiddleware = async (c: Context, next: Next) => {
 
   const usuario = usuarios[0];
 
+  let profesionalId: string | undefined;
+
+  // Si es un médico, buscar su ID de profesional
+  if (usuario.rol === 'PROFESIONAL') {
+    const profs = await db.query.profesionales.findMany({
+      where: (p, { eq }) => eq(p.usuario_id, usuario.id),
+      limit: 1,
+    });
+    if (profs.length > 0) {
+      profesionalId = profs[0].id;
+    }
+  }
+
   const authUser: AuthUser = {
     id: usuario.id,
     email: supabaseUser.email || '',
     clinica_id: usuario.clinica_id,
     nombre: usuario.nombre,
     rol: usuario.rol,
+    profesional_id: profesionalId,
   };
 
   c.set('user', authUser);

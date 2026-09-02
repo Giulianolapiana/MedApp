@@ -37,16 +37,28 @@ disponibilidadRouter.get('/:profId/slots', async (c) => {
   return c.json({ data: slots });
 });
 
-// GET /api/v1/disponibilidad/:profId — Config semanal (ADMIN)
-disponibilidadRouter.get('/:profId', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION']), async (c) => {
+// GET /api/v1/disponibilidad/:profId — Config semanal
+disponibilidadRouter.get('/:profId', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION', 'PROFESIONAL']), async (c) => {
   const profId = c.req.param('profId')!;
+  const user = c.get('user' as never) as AuthUser;
+  
+  if (user.rol === 'PROFESIONAL' && user.profesional_id !== profId) {
+    throw new ValidationError('No tienes permisos para ver la disponibilidad de otro profesional');
+  }
+
   const result = await disponibilidadService.obtenerConfiguracion(profId);
   return c.json({ data: result });
 });
 
-// PUT /api/v1/disponibilidad/:profId — Guardar config semanal (ADMIN)
-disponibilidadRouter.put('/:profId', authMiddleware, requireRole(['ADMINISTRADOR']), async (c) => {
+// PUT /api/v1/disponibilidad/:profId — Guardar config semanal
+disponibilidadRouter.put('/:profId', authMiddleware, requireRole(['ADMINISTRADOR', 'PROFESIONAL']), async (c) => {
   const profId = c.req.param('profId')!;
+  const user = c.get('user' as never) as AuthUser;
+  
+  if (user.rol === 'PROFESIONAL' && user.profesional_id !== profId) {
+    throw new ValidationError('No tienes permisos para modificar la disponibilidad de otro profesional');
+  }
+
   const body = await c.req.json();
   const parsed = GuardarDisponibilidadRequest.safeParse(body);
 
@@ -54,7 +66,6 @@ disponibilidadRouter.put('/:profId', authMiddleware, requireRole(['ADMINISTRADOR
     throw new ValidationError(parsed.error.errors.map(e => e.message).join(', '));
   }
 
-  const user = c.get('user' as never) as AuthUser;
   const result = await disponibilidadService.guardarConfiguracion(profId, user.clinica_id, parsed.data);
   return c.json({ data: result });
 });

@@ -38,6 +38,7 @@ export async function crearTurno(medicoId: string, fecha: Date, hora: string, pa
         profesional_id: medicoId,
         fecha_hora_inicio: fechaHoraInicioIso,
         canal_reserva: 'web',
+        clinica_id: import.meta.env.VITE_CLINICA_ID,
         paciente: {
           nombre_completo: `${pacienteInfo.nombre} ${pacienteInfo.apellido}`,
           telefono_whatsapp: pacienteInfo.celular,

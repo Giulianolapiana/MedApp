@@ -3,9 +3,14 @@ import { fetchApi } from "../../lib/api";
 
 export interface DashboardStats {
   turnosHoy: number;
-  ocupacion: number; // Porcentaje simulado por ahora
+  ocupacion: number;
   pendientes: number;
+  confirmados: number;
+  asistidos: number;
   noShowsHoy: number;
+  cancelados: number;
+  tasaAsistencia: number;
+  tasaCancelacion: number;
   proximosTurnos: any[];
   loading: boolean;
   error: string | null;

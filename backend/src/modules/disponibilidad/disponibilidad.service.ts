@@ -51,7 +51,10 @@ export class DisponibilidadService {
    * Esta lógica ESTABA en el frontend, ahora vive en el backend donde corresponde.
    */
   async generarSlots(profesionalId: string, clinicaId: string, fecha: string) {
-    const date = new Date(fecha);
+    // Fix: Si fecha es "YYYY-MM-DD", new Date(fecha) asume UTC, 
+    // y getDay() al usar hora local puede dar el día anterior en zonas como UTC-3.
+    const [year, month, day] = fecha.split('-');
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
     const diaSemana = date.getDay(); // 0=Domingo, 1=Lunes, ...
 
     // Buscar la disponibilidad del profesional para ese día
@@ -80,14 +83,15 @@ export class DisponibilidadService {
 
     // Filtrar solo los del día solicitado y que no estén cancelados
     const turnosOcupados = turnosDelDia.filter(t => {
-      const turnoFecha = t.fecha_hora_inicio.split('T')[0];
+      // Puede venir como "2026-09-03T..." o "2026-09-03 10:00:00+00"
+      const turnoFecha = t.fecha_hora_inicio.substring(0, 10);
       return turnoFecha === fecha && t.estado !== 'cancelado';
     });
 
     const horasOcupadas = new Set(
       turnosOcupados.map(t => {
         const d = new Date(t.fecha_hora_inicio);
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
       })
     );
 

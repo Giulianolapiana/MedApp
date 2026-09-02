@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, addWeeks, subWeeks } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Profesional } from "../hooks/useAgenda";
+import { useAuth } from "../../auth/AuthContext";
 
 interface AgendaHeaderProps {
   currentDate: Date;
@@ -22,6 +23,7 @@ export function AgendaHeader({
 }: AgendaHeaderProps) {
   // Format the month/year header (e.g. "Agosto 2026")
   const monthYear = format(currentDate, "MMMM yyyy", { locale: es });
+  const { profile } = useAuth();
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-5">
@@ -53,26 +55,30 @@ export function AgendaHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={selectedProfesionalId}
-          onChange={(e) => onChangeProfesional(e.target.value)}
-          className="rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white focus:border-[#E53935] focus:outline-none focus:ring-1 focus:ring-[#E53935]"
-        >
-          <option value="ALL">Todos los profesionales</option>
-          {profesionales.map((prof) => (
-            <option key={prof.id} value={prof.id}>
-              {prof.nombre}
-            </option>
-          ))}
-        </select>
+        {profile?.rol !== "PROFESIONAL" && (
+          <select
+            value={selectedProfesionalId}
+            onChange={(e) => onChangeProfesional(e.target.value)}
+            className="rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white focus:border-[#E53935] focus:outline-none focus:ring-1 focus:ring-[#E53935]"
+          >
+            <option value="ALL">Todos los profesionales</option>
+            {profesionales.map((prof) => (
+              <option key={prof.id} value={prof.id}>
+                {prof.nombre}
+              </option>
+            ))}
+          </select>
+        )}
 
-        <button 
-          onClick={onNewTurno}
-          className="flex items-center gap-2 rounded-lg bg-[#E53935] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#E53935]/20 hover:bg-[#EF5350] transition-colors"
-        >
-          <Plus size={16} />
-          Nuevo Turno
-        </button>
+        {profile?.rol !== "PROFESIONAL" && (
+          <button 
+            onClick={onNewTurno}
+            className="flex items-center gap-2 rounded-lg bg-[#E53935] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#E53935]/20 hover:bg-[#EF5350] transition-colors"
+          >
+            <Plus size={16} />
+            Nuevo Turno
+          </button>
+        )}
       </div>
     </div>
   );

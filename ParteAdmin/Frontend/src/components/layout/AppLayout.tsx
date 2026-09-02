@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useInactivityLogout } from "../../features/auth/useInactivityLogout";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -21,6 +22,10 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Activa el logout automático tras 30 minutos de inactividad
+  useInactivityLogout(30);
 
   return (
     <div className="flex h-screen bg-[#121212] text-gray-100">
@@ -48,7 +53,12 @@ export function AppLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          {NAV_ITEMS.filter(item => {
+            if (profile?.rol === "PROFESIONAL") {
+              return item.label === "Agenda" || item.label === "Configuración";
+            }
+            return true;
+          }).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
