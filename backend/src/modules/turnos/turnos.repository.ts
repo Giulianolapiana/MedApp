@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
 import { BaseRepository } from '../../core/base-repository.js';
 import { turnos, historialTurnos } from '../../db/schema.js';
 import { DrizzleClient, DrizzleTransaction } from '../../core/database.js';
@@ -130,6 +130,77 @@ export class TurnosRepository extends BaseRepository<typeof turnos> {
     }
     
     return finalResults.length;
+  }
+
+  async obtenerTurnosParaRecordatorio(fecha: string) {
+    const turnosFull = await this.db.query.turnos.findMany({
+      where: inArray(turnos.estado, ['pendiente', 'confirmado']),
+      orderBy: desc(turnos.fecha_hora_inicio),
+      with: {
+        paciente: {
+          columns: {
+            id: true,
+            nombre_completo: true,
+            telefono_whatsapp: true,
+            email: true,
+          },
+        },
+        profesional: {
+          columns: {
+            id: true,
+            nombre: true,
+            especialidad: true,
+          },
+        },
+      },
+    });
+
+    const turnosDelDia = turnosFull.filter((t: any) => {
+      const fechaTurno = t.fecha_hora_inicio.substring(0, 10);
+      return fechaTurno === fecha;
+    });
+
+    return turnosDelDia.map((t: any) => {
+      let hora = '';
+      if (t.fecha_hora_inicio.includes('T')) {
+        hora = t.fecha_hora_inicio.split('T')[1].substring(0, 5);
+      } else if (t.fecha_hora_inicio.includes(' ')) {
+        hora = t.fecha_hora_inicio.split(' ')[1].substring(0, 5);
+      }
+
+      return {
+        turno_id: t.id,
+        fecha_hora_inicio: t.fecha_hora_inicio,
+        fecha: t.fecha_hora_inicio.substring(0, 10),
+        hora,
+        estado: t.estado,
+        paciente: {
+          id: t.paciente?.id,
+          nombre: t.paciente?.nombre_completo,
+          telefono: t.paciente?.telefono_whatsapp,
+          email: t.paciente?.email,
+        },
+        profesional: {
+          id: t.profesional?.id,
+          nombre: t.profesional?.nombre,
+          especialidad: t.profesional?.especialidad,
+        },
+      };
+    });
+  }
+
+  /**
+   * Actualiza un turno sin requerir clinica_id.
+   * Uso exclusivo: webhooks de n8n donde solo llega el turno ID.
+   * Seguro porque id es UUID primary key.
+   */
+  async updateWithoutClinica(id: string, data: Partial<{ google_event_id: string }>) {
+    const result = await this.db
+      .update(turnos)
+      .set(data as any)
+      .where(eq(turnos.id, id))
+      .returning();
+    return result[0] || null;
   }
 }
 

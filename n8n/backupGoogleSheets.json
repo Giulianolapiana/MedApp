@@ -1,0 +1,250 @@
+{
+  "name": "MedAPP - Backup a Google Sheets (Cron Nocturno)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-backup",
+      "name": "Todas las noches a las 23:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-700, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, nombre_completo, telefono_whatsapp, email, fecha_nacimiento, activo, creado_en FROM pacientes ORDER BY creado_en DESC",
+        "options": {}
+      },
+      "id": "pg-pacientes",
+      "name": "Query Pacientes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [-480, 0],
+      "credentials": {
+        "postgres": {
+          "id": "CONFIGURAR_POSTGRES",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "URL_DE_TU_SPREADSHEET_AQUI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Pacientes",
+          "cachedResultName": "Pacientes"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["id"]
+        },
+        "options": {}
+      },
+      "id": "sheets-pacientes",
+      "name": "Sheets → Pacientes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-260, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_GSHEETS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT t.id, p.nombre_completo AS paciente, p.telefono_whatsapp AS telefono_paciente, pr.nombre AS profesional, pr.especialidad, t.fecha_hora_inicio, t.estado, t.canal_reserva, t.google_event_id, t.creado_en FROM turnos t LEFT JOIN pacientes p ON t.paciente_id = p.id LEFT JOIN profesionales pr ON t.profesional_id = pr.id ORDER BY t.fecha_hora_inicio DESC",
+        "options": {}
+      },
+      "id": "pg-turnos",
+      "name": "Query Turnos (con JOINs)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [-40, 0],
+      "credentials": {
+        "postgres": {
+          "id": "CONFIGURAR_POSTGRES",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "URL_DE_TU_SPREADSHEET_AQUI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Turnos",
+          "cachedResultName": "Turnos"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["id"]
+        },
+        "options": {}
+      },
+      "id": "sheets-turnos",
+      "name": "Sheets → Turnos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [180, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_GSHEETS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, nombre, especialidad, google_calendar_id, activo, creado_en FROM profesionales ORDER BY nombre ASC",
+        "options": {}
+      },
+      "id": "pg-profesionales",
+      "name": "Query Profesionales",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [400, 0],
+      "credentials": {
+        "postgres": {
+          "id": "CONFIGURAR_POSTGRES",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "URL_DE_TU_SPREADSHEET_AQUI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Profesionales",
+          "cachedResultName": "Profesionales"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["id"]
+        },
+        "options": {}
+      },
+      "id": "sheets-profesionales",
+      "name": "Sheets → Profesionales",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [620, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_GSHEETS",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Todas las noches a las 23:00": {
+      "main": [
+        [
+          {
+            "node": "Query Pacientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Pacientes": {
+      "main": [
+        [
+          {
+            "node": "Sheets → Pacientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets → Pacientes": {
+      "main": [
+        [
+          {
+            "node": "Query Turnos (con JOINs)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Turnos (con JOINs)": {
+      "main": [
+        [
+          {
+            "node": "Sheets → Turnos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets → Turnos": {
+      "main": [
+        [
+          {
+            "node": "Query Profesionales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Profesionales": {
+      "main": [
+        [
+          {
+            "node": "Sheets → Profesionales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "backup-gsheets-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

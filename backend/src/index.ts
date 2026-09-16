@@ -1,7 +1,8 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
+import { logger as pinoLogger } from 'hono-pino';
+import { logger } from './core/logger.js';
 
 // Error handler
 import { errorHandler } from './middleware/error-handler.js';
@@ -18,7 +19,7 @@ import backupsRouter from './modules/backups/backups.router.js';
 const app = new Hono();
 
 // ─── Middlewares globales ───────────────────────────────────────
-app.use('*', logger());
+app.use('*', pinoLogger({ pino: logger }));
 app.use('/api/*', cors({
   origin: ['http://localhost:5173', 'http://localhost:5174'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -55,7 +56,7 @@ app.notFound((c) => c.json({
 // ─── Servidor ──────────────────────────────────────────────────
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-console.log(`
+logger.info(`
 ╔══════════════════════════════════════════════╗
 ║         🏥 MedAPP Backend API v1.0          ║
 ║         Puerto: ${port}                        ║

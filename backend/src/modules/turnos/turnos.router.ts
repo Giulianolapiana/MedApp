@@ -5,8 +5,21 @@ import { ValidationError } from '../../core/errors.js';
 import { authMiddleware, AuthUser } from '../../middleware/auth.middleware.js';
 import { requireRole } from '../../middleware/require-role.js';
 import { rateLimiterMiddleware } from '../../middleware/rate-limiter.middleware.js';
+import { ENV } from '../../core/config.js';
 
 const turnosRouter = new Hono();
+
+// GET /api/v1/turnos/recordatorios — N8N Cron
+turnosRouter.get('/recordatorios', async (c) => {
+  const apiKey = c.req.header('x-api-key');
+  if (!apiKey || apiKey !== ENV.N8N_API_KEY) {
+    return c.json({ error: 'No autorizado. Api Key inválida.' }, 401);
+  }
+
+  const fecha = c.req.query('fecha');
+  const data = await turnosService.obtenerTurnosParaRecordatorio(fecha);
+  return c.json({ data, total: data.length });
+});
 
 // GET /api/v1/turnos — ADMIN/RECEPCION/PROFESIONAL
 turnosRouter.get('/', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION', 'PROFESIONAL']), async (c) => {

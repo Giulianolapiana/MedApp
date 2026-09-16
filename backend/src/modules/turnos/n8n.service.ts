@@ -1,4 +1,3 @@
-import { TurnoType } from "./turnos.schemas";
 import { ENV } from "../../core/config";
 
 interface N8NWebhookPayload {
@@ -9,6 +8,8 @@ interface N8NWebhookPayload {
   estado: string;
   medico_email: string | null;
   google_event_id: string | null;
+  telefono: string;
+  motivo: string;
 }
 
 export class N8NService {
