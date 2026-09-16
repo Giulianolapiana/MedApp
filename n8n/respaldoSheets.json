@@ -1,0 +1,106 @@
+{
+  "name": "Backup Diario de Turnos a Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "e0a1b2c3-d4e5-4f67-8901-23456789abcd",
+      "name": "Schedule Trigger (2 AM Diario)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT t.id, t.fecha_hora, t.estado, p.nombre AS paciente, pr.nombre AS profesional FROM turnos t JOIN pacientes p ON t.paciente_id = p.id JOIN profesionales pr ON t.profesional_id = pr.id WHERE t.fecha_hora >= CURRENT_DATE - INTERVAL '1 day' AND t.fecha_hora < CURRENT_DATE;"
+      },
+      "id": "f1b2c3d4-e5f6-4789-0123-456789abcdef",
+      "name": "Postgres (Obtener Turnos de Ayer)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-medapp-id",
+          "name": "MedAPP DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_SPREADSHEET_ID_AQUI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Turnos_Backup",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "a2b3c4d5-e6f7-4890-1234-56789abcdef0",
+      "name": "Google Sheets (Guardar)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-oauth-id",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger (2 AM Diario)": {
+      "main": [
+        [
+          {
+            "node": "Postgres (Obtener Turnos de Ayer)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres (Obtener Turnos de Ayer)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets (Guardar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "df123456-1234-1234-1234-1234567890ab",
+  "id": "backup-turnos-sheets"
+}

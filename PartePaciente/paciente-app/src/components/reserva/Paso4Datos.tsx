@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useReserva } from '../../context/ReservaContext';
 import { crearTurno } from '../../services/turnos.service';
 import { Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export function Paso4Datos() {
   const { state, setPaciente, setPasoActual } = useReserva();
@@ -13,6 +14,7 @@ export function Paso4Datos() {
     email: state.paciente?.email || ''
   });
   
+  const [aceptaPrivacidad, setAceptaPrivacidad] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorSubmit, setErrorSubmit] = useState<string | null>(null);
 
@@ -35,7 +37,8 @@ export function Paso4Datos() {
         state.medico.id,
         state.fecha,
         state.slotHora,
-        formData
+        formData,
+        aceptaPrivacidad
       );
       
       setPasoActual(5);
@@ -107,10 +110,26 @@ export function Paso4Datos() {
           </div>
         </div>
         
+        <label className="flex items-start gap-3 mb-6 text-sm text-text-primary">
+          <input
+            type="checkbox"
+            required
+            checked={aceptaPrivacidad}
+            onChange={(e) => setAceptaPrivacidad(e.target.checked)}
+            className="mt-1 h-4 w-4 accent-brand-600"
+          />
+          <span>
+            Acepto que el consultorio trate mis datos (nombre, teléfono y email) para gestionar mis turnos y
+            enviarme recordatorios por WhatsApp y correo, según la{' '}
+            <Link to="/privacidad" target="_blank" className="underline text-brand-600">política de privacidad</Link>
+            {' '}(Ley 25.326). *
+          </span>
+        </label>
+
         <div className="mt-auto pt-6 border-t border-border-soft flex justify-end">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !aceptaPrivacidad}
             className="flex items-center justify-center bg-brand-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-brand-700 disabled:opacity-70 transition-colors w-full md:w-auto"
           >
             {loading ? (

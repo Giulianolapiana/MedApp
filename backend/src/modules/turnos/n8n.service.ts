@@ -2,14 +2,24 @@ import { ENV } from "../../core/config";
 
 interface N8NWebhookPayload {
   accion: "CREAR" | "ACTUALIZAR" | "CANCELAR";
+  turno_id: string;
   paciente: string;
   fecha: string;
   hora: string;
+  inicio_utc: string;
   estado: string;
   medico_email: string | null;
   google_event_id: string | null;
   telefono: string;
+  paciente_email: string | null;
   motivo: string;
+  profesional: {
+    nombre: string;
+    especialidad: string;
+  };
+  record: {
+    fecha_hora_inicio: string;
+  };
 }
 
 export class N8NService {
@@ -24,6 +34,7 @@ export class N8NService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": ENV.N8N_API_KEY,
         },
         body: JSON.stringify(payload),
       });

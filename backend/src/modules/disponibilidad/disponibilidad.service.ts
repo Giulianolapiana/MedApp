@@ -1,11 +1,11 @@
 import { db } from '../../core/database.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, lt, inArray } from 'drizzle-orm';
+import { rangoDiaLocal, partesLocales, DURACION_TURNO_MINUTOS } from '../../core/tiempo.js';
 import { NotFoundError, ValidationError } from '../../core/errors.js';
 import { DisponibilidadRepository } from './disponibilidad.repository.js';
 import { turnos } from '../../db/schema.js';
 import { GuardarDisponibilidadType } from './disponibilidad.schemas.js';
 
-const DURACION_TURNO_MINUTOS = 30;
 
 export class DisponibilidadService {
   private repo = new DisponibilidadRepository(db);
@@ -70,35 +70,28 @@ export class DisponibilidadService {
 
     const config = disponibilidadDia[0];
 
-    // Buscar turnos ya reservados para esa fecha
-    const turnosDelDia = await db
+    // Turnos activos de ese día local del consultorio (A-01: rango UTC calculado en Mendoza)
+    const { inicio, fin } = rangoDiaLocal(fecha);
+    const turnosOcupados = await db
       .select()
       .from(turnos)
       .where(
         and(
           eq(turnos.profesional_id, profesionalId),
-          eq(turnos.clinica_id, clinicaId)
+          eq(turnos.clinica_id, clinicaId),
+          inArray(turnos.estado, ['pendiente', 'confirmado']),
+          gte(turnos.fecha_hora_inicio, inicio),
+          lt(turnos.fecha_hora_inicio, fin)
         )
       );
 
-    // Filtrar solo los del día solicitado y que no estén cancelados
-    const turnosOcupados = turnosDelDia.filter(t => {
-      // Puede venir como "2026-09-03T..." o "2026-09-03 10:00:00+00"
-      const turnoFecha = t.fecha_hora_inicio.substring(0, 10);
-      return turnoFecha === fecha && t.estado !== 'cancelado';
-    });
+    const horasOcupadas = new Set(turnosOcupados.map(t => partesLocales(t.fecha_hora_inicio).hora));
 
-    const horasOcupadas = new Set(
-      turnosOcupados.map(t => {
-        const d = new Date(t.fecha_hora_inicio);
-        return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-      })
-    );
-
-    // Determinar si la fecha solicitada es hoy para filtrar slots pasados
-    const ahora = new Date();
-    const esHoy = fecha === `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
-    const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
+    // "Hoy" y "ahora" en la zona del consultorio, no en la del servidor
+    const ahoraLocal = partesLocales(new Date());
+    const esHoy = fecha === ahoraLocal.fecha;
+    const [hA, mA] = ahoraLocal.hora.split(':').map(Number);
+    const minutosActuales = hA * 60 + mA;
 
     // Generar los slots de DURACION_TURNO_MINUTOS minutos
     const slots: { hora: string; disponible: boolean }[] = [];

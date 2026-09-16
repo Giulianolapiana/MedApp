@@ -62,6 +62,8 @@ export const pacientes = pgTable('pacientes', {
   telefono_whatsapp: text('telefono_whatsapp').notNull(),
   email: text('email'),
   fecha_nacimiento: text('fecha_nacimiento'),
+  consentimiento_en: timestamp('consentimiento_en', { withTimezone: true, mode: 'string' }),
+  consentimiento_canal: text('consentimiento_canal'),
   clinica_id: uuid('clinica_id').references(() => clinicas.id).notNull(),
   activo: boolean('activo').default(true).notNull(),
   creado_en: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -73,8 +75,9 @@ export const turnos = pgTable('turnos', {
   paciente_id: uuid('paciente_id').references(() => pacientes.id).notNull(),
   profesional_id: uuid('profesional_id').references(() => profesionales.id).notNull(),
   clinica_id: uuid('clinica_id').references(() => clinicas.id).notNull(),
-  fecha_hora_inicio: text('fecha_hora_inicio').notNull(),
-  fecha_hora_fin: text('fecha_hora_fin'),
+  // timestamptz: instante real en UTC; se muestra en America/Argentina/Mendoza (A-01)
+  fecha_hora_inicio: timestamp('fecha_hora_inicio', { withTimezone: true, mode: 'string' }).notNull(),
+  fecha_hora_fin: timestamp('fecha_hora_fin', { withTimezone: true, mode: 'string' }).notNull(),
   estado: estadoTurnoEnum('estado').default('pendiente').notNull(),
   canal_reserva: canalReservaEnum('canal_reserva').default('web').notNull(),
   google_event_id: text('google_event_id'),
@@ -100,6 +103,8 @@ export const logComunicacion = pgTable('log_comunicacion', {
   tipo: tipoComunicacionEnum('tipo').notNull(),
   canal: text('canal').default('whatsapp').notNull(),
   respuesta_paciente: text('respuesta_paciente'),
+  mensaje_externo_id: text('mensaje_externo_id'),
+  detalle: text('detalle'),
   timestamp: timestamp('timestamp', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 

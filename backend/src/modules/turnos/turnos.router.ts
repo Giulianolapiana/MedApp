@@ -5,20 +5,50 @@ import { ValidationError } from '../../core/errors.js';
 import { authMiddleware, AuthUser } from '../../middleware/auth.middleware.js';
 import { requireRole } from '../../middleware/require-role.js';
 import { rateLimiterMiddleware } from '../../middleware/rate-limiter.middleware.js';
-import { ENV } from '../../core/config.js';
+import { apiKeyMiddleware } from '../../middleware/api-key.js';
+import { rangoDiaLocal, partesLocales } from '../../core/tiempo.js';
+import { z } from 'zod';
 
 const turnosRouter = new Hono();
 
 // GET /api/v1/turnos/recordatorios — N8N Cron
-turnosRouter.get('/recordatorios', async (c) => {
-  const apiKey = c.req.header('x-api-key');
-  if (!apiKey || apiKey !== ENV.N8N_API_KEY) {
-    return c.json({ error: 'No autorizado. Api Key inválida.' }, 401);
-  }
-
+turnosRouter.get('/recordatorios', apiKeyMiddleware, async (c) => {
   const fecha = c.req.query('fecha');
   const data = await turnosService.obtenerTurnosParaRecordatorio(fecha);
   return c.json({ data, total: data.length });
+});
+
+// POST /api/v1/turnos/recordatorios/:id/enviado — n8n informa el envío (A-05)
+turnosRouter.post('/recordatorios/:id/enviado', apiKeyMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const r = await turnosService.registrarRecordatorioEnviado(c.req.param('id')!, body?.mensaje_externo_id);
+  return c.json({ data: r });
+});
+
+// ─── Canal WhatsApp: herramientas del agente conversacional (n8n) ─────────
+const RespuestaWhatsapp = z.object({
+  clinica_id: z.string().uuid(),
+  telefono: z.string().min(8),
+  accion: z.enum(['confirmado', 'cancelado']),
+  mensaje: z.string().max(500).optional(),
+});
+
+// GET /api/v1/turnos/whatsapp/mis-turnos?clinica_id=&telefono=
+turnosRouter.get('/whatsapp/mis-turnos', apiKeyMiddleware, async (c) => {
+  const clinicaId = c.req.query('clinica_id');
+  const telefono = c.req.query('telefono');
+  if (!clinicaId || !telefono) throw new ValidationError('clinica_id y telefono son requeridos');
+  const data = await turnosService.proximosDelPaciente(clinicaId, telefono);
+  return c.json({ data, total: data.length });
+});
+
+// POST /api/v1/turnos/whatsapp/:id/respuesta — confirmar o cancelar (K-04, K-06)
+turnosRouter.post('/whatsapp/:id/respuesta', apiKeyMiddleware, async (c) => {
+  const parsed = RespuestaWhatsapp.safeParse(await c.req.json());
+  if (!parsed.success) throw new ValidationError(parsed.error.errors.map(e => e.message).join(', '));
+  const { clinica_id, telefono, accion, mensaje } = parsed.data;
+  const data = await turnosService.responderDesdeWhatsapp(clinica_id, c.req.param('id')!, telefono, accion, mensaje);
+  return c.json({ data });
 });
 
 // GET /api/v1/turnos — ADMIN/RECEPCION/PROFESIONAL
@@ -45,9 +75,9 @@ turnosRouter.get('/', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION',
 // GET /api/v1/turnos/stats — ADMIN
 turnosRouter.get('/stats', authMiddleware, requireRole(['ADMINISTRADOR']), async (c) => {
   const user = c.get('user' as never) as AuthUser;
-  const today = new Date();
-  const startOfToday = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-  const endOfToday = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+  // Día de hoy en la zona del consultorio, no la del servidor (A-01)
+  const hoy = partesLocales(new Date()).fecha;
+  const { inicio: startOfToday, fin: endOfToday } = rangoDiaLocal(hoy);
 
   // 1. Estadísticas detalladas de hoy
   const statsHoy = await turnosService.getStats(user.clinica_id, startOfToday, endOfToday);
@@ -58,8 +88,10 @@ turnosRouter.get('/stats', authMiddleware, requireRole(['ADMINISTRADOR']), async
     fecha_hasta: endOfToday
   }, 1, 5);
 
-  const maxCapacity = 20; // mock de capacidad diaria
-  const ocupacion = statsHoy.total > 0 ? Math.min(Math.round((statsHoy.total / maxCapacity) * 100), 100) : 0;
+  // Ocupación real: turnos activos o atendidos / slots ofrecidos hoy según disponibilidad
+  const capacidad = await turnosService.capacidadDelDia(user.clinica_id, hoy);
+  const ocupados = statsHoy.pendientes + statsHoy.confirmado + statsHoy.asistido + statsHoy.no_show;
+  const ocupacion = capacidad > 0 ? Math.min(Math.round((ocupados / capacidad) * 100), 100) : 0;
 
   return c.json({
     data: {
@@ -72,6 +104,7 @@ turnosRouter.get('/stats', authMiddleware, requireRole(['ADMINISTRADOR']), async
       cancelados: statsHoy.cancelado,
       tasaAsistencia: statsHoy.tasaAsistencia,
       tasaCancelacion: statsHoy.tasaCancelacion,
+      capacidad,
       proximosTurnos: proximosTurnosResult,
     }
   });
@@ -116,7 +149,6 @@ turnosRouter.post('/', rateLimiterMiddleware, async (c) => {
   }
 
   const clinicaId = c.req.query('clinica_id') || body.clinica_id;
-  console.log('>>> POST /turnos received URL:', c.req.url, 'query clinica_id:', c.req.query('clinica_id'), 'body clinica_id:', body.clinica_id);
   if (!clinicaId) {
     throw new ValidationError('clinica_id es requerido (query parameter o body)');
   }
@@ -141,16 +173,14 @@ turnosRouter.patch('/:id/estado', authMiddleware, requireRole(['ADMINISTRADOR', 
 });
 
 // PATCH /api/v1/turnos/:id/google-event — N8N Webhook Receiver
-// No requiere authMiddleware porque lo llama n8n (podríamos usar un secret token)
-turnosRouter.patch('/:id/google-event', async (c) => {
+// Autenticado con x-api-key (antes era público: cualquiera podía modificar turnos)
+turnosRouter.patch('/:id/google-event', apiKeyMiddleware, async (c) => {
   const id = c.req.param('id')!;
   const body = await c.req.json();
   
   if (!body.google_event_id) {
     throw new ValidationError('google_event_id es requerido');
   }
-
-  // TODO: validate security token from n8n if needed
 
   await turnosService.updateGoogleEventId(id, body.google_event_id);
   return c.json({ success: true });

@@ -1,6 +1,6 @@
-import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, lt, gt, desc, asc, inArray, sql } from 'drizzle-orm';
 import { BaseRepository } from '../../core/base-repository.js';
-import { turnos, historialTurnos } from '../../db/schema.js';
+import { turnos, historialTurnos, logComunicacion, pacientes } from '../../db/schema.js';
 import { DrizzleClient, DrizzleTransaction } from '../../core/database.js';
 
 export class TurnosRepository extends BaseRepository<typeof turnos> {
@@ -85,19 +85,25 @@ export class TurnosRepository extends BaseRepository<typeof turnos> {
     return finalResults;
   }
 
-  async findConflicto(profesionalId: string, fechaHoraInicio: string) {
+  /**
+   * Chequeo previo de solapamiento (para dar un mensaje claro al usuario).
+   * La garantía real es la restricción EXCLUDE de la base (K-07): este chequeo
+   * solo, sin la restricción, sería vulnerable a condiciones de carrera.
+   */
+  async findConflicto(profesionalId: string, inicioUtc: string, finUtc: string) {
     const results = await this.db
-      .select()
+      .select({ id: turnos.id })
       .from(turnos)
       .where(
         and(
           eq(turnos.profesional_id, profesionalId),
-          eq(turnos.fecha_hora_inicio, fechaHoraInicio)
+          inArray(turnos.estado, ['pendiente', 'confirmado']),
+          lt(turnos.fecha_hora_inicio, finUtc),
+          gt(turnos.fecha_hora_fin, inicioUtc)
         )
-      );
-
-    // Solo es conflicto si el turno está pendiente o confirmado
-    return results.find(t => ['pendiente', 'confirmado'].includes(t.estado)) || null;
+      )
+      .limit(1);
+    return results[0] ?? null;
   }
 
   async countByClinica(
@@ -132,61 +138,49 @@ export class TurnosRepository extends BaseRepository<typeof turnos> {
     return finalResults.length;
   }
 
-  async obtenerTurnosParaRecordatorio(fecha: string) {
+  /**
+   * Turnos activos cuyo inicio cae en [desdeUtc, hastaUtc) y que todavía no
+   * recibieron recordatorio (A-05: idempotencia apoyada en log_comunicacion).
+   */
+  async obtenerTurnosParaRecordatorio(desdeUtc: string, hastaUtc: string) {
     const turnosFull = await this.db.query.turnos.findMany({
-      where: inArray(turnos.estado, ['pendiente', 'confirmado']),
-      orderBy: desc(turnos.fecha_hora_inicio),
+      where: and(
+        inArray(turnos.estado, ['pendiente', 'confirmado']),
+        gte(turnos.fecha_hora_inicio, desdeUtc),
+        lt(turnos.fecha_hora_inicio, hastaUtc),
+        sql`NOT EXISTS (SELECT 1 FROM log_comunicacion lc WHERE lc.turno_id = ${turnos.id} AND lc.tipo = 'recordatorio')`
+      ),
+      orderBy: asc(turnos.fecha_hora_inicio),
       with: {
-        paciente: {
-          columns: {
-            id: true,
-            nombre_completo: true,
-            telefono_whatsapp: true,
-            email: true,
-          },
-        },
-        profesional: {
-          columns: {
-            id: true,
-            nombre: true,
-            especialidad: true,
-          },
-        },
+        paciente: { columns: { id: true, nombre_completo: true, telefono_whatsapp: true, email: true } },
+        profesional: { columns: { id: true, nombre: true, especialidad: true } },
       },
     });
+    return turnosFull;
+  }
 
-    const turnosDelDia = turnosFull.filter((t: any) => {
-      const fechaTurno = t.fecha_hora_inicio.substring(0, 10);
-      return fechaTurno === fecha;
-    });
-
-    return turnosDelDia.map((t: any) => {
-      let hora = '';
-      if (t.fecha_hora_inicio.includes('T')) {
-        hora = t.fecha_hora_inicio.split('T')[1].substring(0, 5);
-      } else if (t.fecha_hora_inicio.includes(' ')) {
-        hora = t.fecha_hora_inicio.split(' ')[1].substring(0, 5);
-      }
-
-      return {
-        turno_id: t.id,
-        fecha_hora_inicio: t.fecha_hora_inicio,
-        fecha: t.fecha_hora_inicio.substring(0, 10),
-        hora,
-        estado: t.estado,
-        paciente: {
-          id: t.paciente?.id,
-          nombre: t.paciente?.nombre_completo,
-          telefono: t.paciente?.telefono_whatsapp,
-          email: t.paciente?.email,
-        },
-        profesional: {
-          id: t.profesional?.id,
-          nombre: t.profesional?.nombre,
-          especialidad: t.profesional?.especialidad,
-        },
-      };
-    });
+  /** Próximos turnos activos de un paciente identificado por teléfono (canal WhatsApp). */
+  async proximosPorTelefono(clinicaId: string, telefono: string, desdeUtc: string) {
+    return this.db
+      .select({
+        id: turnos.id,
+        fecha_hora_inicio: turnos.fecha_hora_inicio,
+        estado: turnos.estado,
+        profesional_id: turnos.profesional_id,
+        paciente_id: turnos.paciente_id,
+      })
+      .from(turnos)
+      .innerJoin(pacientes, eq(pacientes.id, turnos.paciente_id))
+      .where(
+        and(
+          eq(turnos.clinica_id, clinicaId),
+          eq(pacientes.telefono_whatsapp, telefono),
+          inArray(turnos.estado, ['pendiente', 'confirmado']),
+          gte(turnos.fecha_hora_inicio, desdeUtc)
+        )
+      )
+      .orderBy(asc(turnos.fecha_hora_inicio))
+      .limit(10);
   }
 
   /**
@@ -236,5 +230,27 @@ export class HistorialTurnosRepository {
       .from(historialTurnos)
       .where(eq(historialTurnos.turno_id, turnoId))
       .orderBy(desc(historialTurnos.creado_en));
+  }
+}
+
+export class LogComunicacionRepository {
+  constructor(private db: DrizzleClient | DrizzleTransaction) {}
+
+  /** Inserta un registro; para recordatorios, un duplicado se ignora (índice único parcial). */
+  async registrar(data: {
+    turno_id: string;
+    clinica_id: string;
+    tipo: 'recordatorio' | 'confirmacion' | 'cancelacion';
+    canal?: string;
+    respuesta_paciente?: string | null;
+    mensaje_externo_id?: string | null;
+    detalle?: string | null;
+  }) {
+    const result = await this.db
+      .insert(logComunicacion)
+      .values({ canal: 'whatsapp', ...data })
+      .onConflictDoNothing()
+      .returning();
+    return result[0] ?? null;
   }
 }

@@ -5,6 +5,8 @@ export const CrearTurnoRequest = z.object({
   clinica_id: z.string().uuid('ID de clinica inválido').optional(),
   fecha_hora_inicio: z.string().min(1, 'La fecha y hora de inicio es requerida'),
   canal_reserva: z.enum(['web', 'whatsapp', 'manual']).default('web'),
+  // A-02: obligatorio (true) en el canal web; en WhatsApp el agente informa la política
+  consentimiento_privacidad: z.boolean().optional(),
   // Datos del paciente (se crea o se busca)
   paciente: z.object({
     nombre_completo: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),

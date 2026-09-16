@@ -6,7 +6,8 @@
         "httpMethod": "POST",
         "path": "turnos",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth"
       },
       "id": "7456aad0-6926-4933-b9d5-8429f4ad37df",
       "name": "Webhook MedAPP",
@@ -16,7 +17,13 @@
         -192,
         0
       ],
-      "webhookId": "medapp-turnos-webhook"
+      "webhookId": "medapp-turnos-webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -45,8 +52,8 @@
           "value": "=giulianolapianam@gmail.com",
           "mode": "id"
         },
-        "start": "={{ $json.body.fecha }}T{{ $json.body.hora }}:00-03:00",
-        "end": "={{ DateTime.fromISO($json.body.fecha + 'T' + $json.body.hora + ':00-03:00').plus({ minutes: 30 }).toISO() }}",
+        "start": "={{ $json.body.inicio_utc }}",
+        "end": "={{ DateTime.fromISO($json.body.inicio_utc).plus({ minutes: 30 }).toISO() }}",
         "additionalFields": {
           "attendees": [
             "={{ $json.body.medico_email }}"
