@@ -11,7 +11,9 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url("Debe ser la URL de tu proyecto Supabase"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Service Role Key es obligatoria"),
   N8N_WEBHOOK_URL: z.string().url().optional(),
-  N8N_API_KEY: z.string().default('medapp_n8n_secret_key_2026'),
+  // Sin valor por defecto: una clave publicada en el repositorio no es un secreto.
+  N8N_API_KEY: z.string().min(32, 'N8N_API_KEY debe tener al menos 32 caracteres'),
+  ZONA_HORARIA: z.string().default('America/Argentina/Mendoza'),
 });
 
 const _env = envSchema.safeParse(process.env);

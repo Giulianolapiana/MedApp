@@ -25,15 +25,8 @@
       "parameters": {
         "method": "GET",
         "url": "http://localhost:3000/api/v1/turnos/recordatorios",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-api-key",
-              "value": "medapp_n8n_secret_key_2026"
-            }
-          ]
-        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "options": {}
       },
       "id": "http-get-turnos-manana",
@@ -43,7 +36,13 @@
       "position": [
         -480,
         0
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -114,6 +113,18 @@
               "id": "var-hora",
               "name": "hora",
               "value": "={{ $json.hora }}",
+              "type": "string"
+            },
+            {
+              "id": "var-turno",
+              "name": "turno_id",
+              "value": "={{ $json.turno_id }}",
+              "type": "string"
+            },
+            {
+              "id": "var-cuando",
+              "name": "cuando",
+              "value": "={{ $json.cuando }}",
               "type": "string"
             }
           ]
@@ -201,7 +212,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"content\": \"Hola \" + $('Variables Chatwoot').item.json.paciente_nombre + \"! 👋 Te recordamos que mañana tenés tu turno en MedAPP con \" + $('Variables Chatwoot').item.json.profesional_nombre + \" (\" + $('Variables Chatwoot').item.json.especialidad + \") a las \" + $('Variables Chatwoot').item.json.hora + \" hs. ¡Te esperamos!\",\n  \"message_type\": \"outgoing\",\n  \"private\": false\n}",
+        "jsonBody": "={{ JSON.stringify({\n  content: `Hola ${$('Variables Chatwoot').item.json.paciente_nombre} 👋 Te recordamos tu turno en MedAPP con ${$('Variables Chatwoot').item.json.profesional_nombre} (${$('Variables Chatwoot').item.json.especialidad}) el ${$('Variables Chatwoot').item.json.cuando}.\\n\\nRespondé CONFIRMAR para confirmar, CANCELAR si no podés asistir o CAMBIAR si querés otro horario.`,\n  message_type: 'outgoing',\n  private: false\n}) }}",
         "options": {}
       },
       "id": "http-enviar-recordatorio",
@@ -216,6 +227,32 @@
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
           "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3000/api/v1/turnos/recordatorios/{{ $('Variables Chatwoot').item.json.turno_id }}/enviado",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.id ?? '') }) }}",
+        "options": {}
+      },
+      "id": "http-registrar-recordatorio",
+      "name": "Registrar Envío en MedApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
         }
       }
     }
@@ -282,6 +319,17 @@
         [
           {
             "node": "Enviar WhatsApp Recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp Recordatorio": {
+      "main": [
+        [
+          {
+            "node": "Registrar Envío en MedApp",
             "type": "main",
             "index": 0
           }

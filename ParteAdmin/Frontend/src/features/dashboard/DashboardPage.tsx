@@ -89,7 +89,7 @@ export function DashboardPage() {
                     <div className="flex flex-col items-end gap-2">
                       <div className="flex items-center gap-1.5 text-sm font-medium text-gray-300">
                         <Clock size={14} className="text-gray-500" />
-                        {new Date(turno.fecha_hora_inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(turno.fecha_hora_inicio).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Mendoza' })}
                       </div>
                       <EstadoBadge estado={turno.estado} />
                     </div>

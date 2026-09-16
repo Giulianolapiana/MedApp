@@ -1,0 +1,13 @@
+CREATE TYPE estado_turno AS ENUM ('pendiente','confirmado','cancelado','asistido','no_show');
+CREATE TYPE canal_reserva AS ENUM ('web','whatsapp','manual');
+CREATE TYPE tipo_comunicacion AS ENUM ('recordatorio','confirmacion','cancelacion');
+CREATE TABLE clinicas(id uuid primary key default gen_random_uuid(), nombre text not null);
+CREATE TABLE pacientes(id uuid primary key default gen_random_uuid(), nombre_completo text, telefono_whatsapp text, clinica_id uuid references clinicas(id), activo boolean default true);
+CREATE TABLE profesionales(id uuid primary key default gen_random_uuid(), nombre text, clinica_id uuid references clinicas(id));
+CREATE TABLE turnos(id uuid primary key default gen_random_uuid(), paciente_id uuid references pacientes(id) on delete cascade, profesional_id uuid references profesionales(id), clinica_id uuid references clinicas(id), fecha_hora_inicio text not null, fecha_hora_fin text, estado estado_turno default 'pendiente' not null, canal_reserva canal_reserva default 'web', creado_en timestamptz default now());
+CREATE TABLE historial_turnos(id uuid primary key default gen_random_uuid(), turno_id uuid references turnos(id), estado_desde text, estado_hacia text, creado_en timestamptz default now());
+CREATE TABLE log_comunicacion(id uuid primary key default gen_random_uuid(), turno_id uuid references turnos(id) not null, clinica_id uuid, tipo tipo_comunicacion not null, canal text default 'whatsapp', respuesta_paciente text, "timestamp" timestamptz default now());
+INSERT INTO clinicas(id,nombre) VALUES ('11111111-1111-1111-1111-111111111111','C');
+INSERT INTO profesionales(id,nombre,clinica_id) VALUES ('22222222-2222-2222-2222-222222222222','Dr','11111111-1111-1111-1111-111111111111');
+INSERT INTO pacientes(id,nombre_completo,clinica_id) VALUES ('33333333-3333-3333-3333-333333333333','P','11111111-1111-1111-1111-111111111111');
+INSERT INTO turnos(paciente_id,profesional_id,clinica_id,fecha_hora_inicio) VALUES ('33333333-3333-3333-3333-333333333333','22222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111','2026-09-20T13:00:00.000Z');
