@@ -1,9 +1,10 @@
 import { ErrorHandler } from 'hono';
 import { AppError } from '../core/errors.js';
 import { ZodError } from 'zod';
+import { logger } from '../core/logger.js';
 
 export const errorHandler: ErrorHandler = (err, c) => {
-  console.error('Error atrapado por errorHandler:', err);
+  logger.error({ err, path: c.req.path, method: c.req.method }, 'Error atrapado por errorHandler');
 
   // Si es nuestro AppError personalizado
   if (err instanceof AppError) {

@@ -5,13 +5,16 @@ import type { Turno } from "../hooks/useAgenda";
 interface EstadoTurnoModalProps {
   turno: Turno;
   onClose: () => void;
-  onSave: (turnoId: string, estado: string) => Promise<void>;
+  onSave: (turnoId: string, estado: string, motivo?: string) => Promise<void>;
 }
 
 export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalProps) {
   const [estado, setEstado] = useState(turno.estado);
+  const [motivo, setMotivo] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const requiresMotivo = estado === "cancelado";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,12 +22,17 @@ export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalPro
       onClose();
       return;
     }
+
+    if (requiresMotivo && !motivo.trim()) {
+      setError("El motivo es obligatorio al cancelar un turno");
+      return;
+    }
     
     setSaving(true);
     setError("");
     
     try {
-      await onSave(turno.id, estado);
+      await onSave(turno.id, estado, motivo || undefined);
       onClose();
     } catch (err: any) {
       setError(err.message || "Error al actualizar estado");
@@ -66,7 +74,7 @@ export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalPro
               <label className="block text-sm font-medium text-gray-300 mb-1">Estado</label>
               <select
                 value={estado}
-                onChange={(e) => setEstado(e.target.value)}
+                onChange={(e) => { setEstado(e.target.value); setError(""); }}
                 className="w-full rounded-lg border border-white/10 bg-[#1a1a1a] px-4 py-2 text-white focus:border-[#E53935] focus:outline-none"
               >
                 <option value="pendiente">Pendiente</option>
@@ -76,6 +84,21 @@ export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalPro
                 <option value="no_show">No Show (Falta)</option>
               </select>
             </div>
+
+            {requiresMotivo && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Motivo de cancelación <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={motivo}
+                  onChange={(e) => { setMotivo(e.target.value); setError(""); }}
+                  placeholder="Ej: Paciente solicitó reprogramar"
+                  rows={3}
+                  className="w-full rounded-lg border border-white/10 bg-[#1a1a1a] px-4 py-2 text-white placeholder:text-gray-600 focus:border-[#E53935] focus:outline-none resize-none"
+                />
+              </div>
+            )}
           </form>
         </div>
 

@@ -5,6 +5,7 @@ import { PacientesRepository } from '../pacientes/pacientes.repository.js';
 import { validarTransicion, getTransicionesPosibles, EstadoTurno } from './turnos.fsm.js';
 import { CrearTurnoType, AvanzarEstadoType } from './turnos.schemas.js';
 import { n8nService } from './n8n.service.js';
+import { logger } from '../../core/logger.js';
 
 export class TurnosService {
   private repo = new TurnosRepository(db);
@@ -152,7 +153,7 @@ export class TurnosService {
         result.google_event_id = eventId;
       }
     } catch (e) {
-      console.error("Error al notificar n8n en creación de turno", e);
+      logger.error({ err: e, turno_id: result.id }, "Error al notificar n8n en creación de turno");
     }
 
     return result;
@@ -239,7 +240,7 @@ export class TurnosService {
         motivo: data.motivo || 'Sin motivo especificado'
       });
     } catch (e) {
-      console.error("Error al notificar n8n en actualización de turno", e);
+      logger.error({ err: e, turno_id: result.id }, "Error al notificar n8n en actualización de turno");
     }
 
     return result;
@@ -253,6 +254,21 @@ export class TurnosService {
     // pero id es UUID primary key así que es seguro actualizarlo.
     const turnosRepo = new TurnosRepository(db);
     return await turnosRepo.updateWithoutClinica(id, { google_event_id: googleEventId });
+  }
+
+  /**
+   * Obtiene los turnos para recordatorio automático (usado por n8n)
+   */
+  async obtenerTurnosParaRecordatorio(fecha?: string) {
+    let fechaObjetivo = fecha;
+    if (!fechaObjetivo) {
+      const manana = new Date();
+      manana.setDate(manana.getDate() + 1);
+      fechaObjetivo = `${manana.getFullYear()}-${String(manana.getMonth() + 1).padStart(2, '0')}-${String(manana.getDate()).padStart(2, '0')}`;
+    }
+
+    const turnosRepo = new TurnosRepository(db);
+    return await turnosRepo.obtenerTurnosParaRecordatorio(fechaObjetivo);
   }
 }
 
