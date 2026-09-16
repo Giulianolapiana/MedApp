@@ -16,7 +16,7 @@ export function Navbar() {
         
         <nav className="hidden md:flex items-center gap-8">
           <a href="/#especialidades" className="text-sm font-medium text-text-secondary hover:text-brand-600 transition-colors">Especialidades</a>
-          <Link to="/reserva" className="text-sm font-medium text-text-secondary hover:text-brand-600 transition-colors">Médicos</Link>
+          <Link to="/medicos" className="text-sm font-medium text-text-secondary hover:text-brand-600 transition-colors">Médicos</Link>
           <a href="/#como-funciona" className="text-sm font-medium text-text-secondary hover:text-brand-600 transition-colors">Cómo funciona</a>
         </nav>
         

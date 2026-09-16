@@ -1,0 +1,349 @@
+{
+  "name": "MedAPP - Recordatorios de Turnos (Cron 24hs)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-recordatorios",
+      "name": "Todos los días a las 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3000/api/v1/turnos/recordatorios",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "http-get-turnos-manana",
+      "name": "Obtener Turnos de Mañana (MedAPP)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.data || [];\nif (!items.length) {\n  return [];\n}\nreturn items.map(turno => ({ json: turno }));"
+      },
+      "id": "code-split-turnos",
+      "name": "Separar cada Turno",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "var-serverUrl",
+              "name": "serverUrl",
+              "value": "https://chatwoot.verticedev.online",
+              "type": "string"
+            },
+            {
+              "id": "var-accountId",
+              "name": "accountId",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "var-inboxId",
+              "name": "inboxId",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "var-nombre",
+              "name": "paciente_nombre",
+              "value": "={{ $json.paciente.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "var-telefono",
+              "name": "paciente_telefono",
+              "value": "={{ $json.paciente.telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "var-medico",
+              "name": "profesional_nombre",
+              "value": "={{ $json.profesional.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "var-especialidad",
+              "name": "especialidad",
+              "value": "={{ $json.profesional.especialidad }}",
+              "type": "string"
+            },
+            {
+              "id": "var-fecha",
+              "name": "fecha",
+              "value": "={{ $json.fecha }}",
+              "type": "string"
+            },
+            {
+              "id": "var-hora",
+              "name": "hora",
+              "value": "={{ $json.hora }}",
+              "type": "string"
+            },
+            {
+              "id": "var-turno",
+              "name": "turno_id",
+              "value": "={{ $json.turno_id }}",
+              "type": "string"
+            },
+            {
+              "id": "var-cuando",
+              "name": "cuando",
+              "value": "={{ $json.cuando }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-chatwoot-variables",
+      "name": "Variables Chatwoot",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.serverUrl }}/api/v1/accounts/{{ $json.accountId }}/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": {{ JSON.stringify($json.paciente_nombre) }},\n  \"phone_number\": \"+\" + {{ JSON.stringify($json.paciente_telefono.replace('+', '').replace(/\\s+/g, '')) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-crear-contacto-chatwoot",
+      "name": "Crear o Buscar Contacto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/conversations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contact_id\": {{ $json.payload ? $json.payload.contact.id : ($json.id || 1) }},\n  \"inbox_id\": {{ $('Variables Chatwoot').item.json.inboxId }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-crear-conversacion-chatwoot",
+      "name": "Crear Conversación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/conversations/{{ $json.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  content: `Hola ${$('Variables Chatwoot').item.json.paciente_nombre} 👋 Te recordamos tu turno en MedAPP con ${$('Variables Chatwoot').item.json.profesional_nombre} (${$('Variables Chatwoot').item.json.especialidad}) el ${$('Variables Chatwoot').item.json.cuando}.\\n\\nRespondé CONFIRMAR para confirmar, CANCELAR si no podés asistir o CAMBIAR si querés otro horario.`,\n  message_type: 'outgoing',\n  private: false\n}) }}",
+        "options": {}
+      },
+      "id": "http-enviar-recordatorio",
+      "name": "Enviar WhatsApp Recordatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3000/api/v1/turnos/recordatorios/{{ $('Variables Chatwoot').item.json.turno_id }}/enviado",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.id ?? '') }) }}",
+        "options": {}
+      },
+      "id": "http-registrar-recordatorio",
+      "name": "Registrar Envío en MedApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Todos los días a las 09:00": {
+      "main": [
+        [
+          {
+            "node": "Obtener Turnos de Mañana (MedAPP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Turnos de Mañana (MedAPP)": {
+      "main": [
+        [
+          {
+            "node": "Separar cada Turno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar cada Turno": {
+      "main": [
+        [
+          {
+            "node": "Variables Chatwoot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Variables Chatwoot": {
+      "main": [
+        [
+          {
+            "node": "Crear o Buscar Contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear o Buscar Contacto": {
+      "main": [
+        [
+          {
+            "node": "Crear Conversación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Conversación": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp Recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp Recordatorio": {
+      "main": [
+        [
+          {
+            "node": "Registrar Envío en MedApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

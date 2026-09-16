@@ -2,3 +2,4 @@ packages:
   - 'ParteAdmin/*'
   - 'PartePaciente/*'
   - 'packages/*'
+  - 'backend'

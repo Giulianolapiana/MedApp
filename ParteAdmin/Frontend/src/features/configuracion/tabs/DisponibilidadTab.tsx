@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Save } from "lucide-react";
 import { useProfesionales } from "../hooks/useProfesionales";
 import { useDisponibilidad, type DisponibilidadInsert } from "../hooks/useDisponibilidad";
+import { useAuth } from "../../auth/AuthContext";
 
 const DIAS = [
   { id: 1, nombre: "Lunes" },
@@ -10,7 +11,7 @@ const DIAS = [
   { id: 4, nombre: "Jueves" },
   { id: 5, nombre: "Viernes" },
   { id: 6, nombre: "Sábado" },
-  { id: 7, nombre: "Domingo" },
+  { id: 0, nombre: "Domingo" },
 ];
 
 export function DisponibilidadTab() {
@@ -24,11 +25,16 @@ export function DisponibilidadTab() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const { profile } = useAuth();
+  const isProfesional = profile?.rol === "PROFESIONAL";
+
   useEffect(() => {
-    if (profesionales.length > 0 && !selectedProfId) {
+    if (isProfesional && profile?.profesional_id) {
+      setSelectedProfId(profile.profesional_id);
+    } else if (profesionales.length > 0 && !selectedProfId) {
       setSelectedProfId(profesionales[0].id);
     }
-  }, [profesionales, selectedProfId]);
+  }, [profesionales, selectedProfId, isProfesional, profile]);
 
   useEffect(() => {
     // Populate local state when DB state changes
@@ -57,8 +63,8 @@ export function DisponibilidadTab() {
         clinica_id: clinicaId,
         profesional_id: selectedProfId,
         dia_semana: dia.id,
-        horario_inicio: `${current.inicio}:00`,
-        horario_fin: `${current.fin}:00`,
+        horario_inicio: current.inicio,
+        horario_fin: current.fin,
         habilitado: current.habilitado,
       };
     });
@@ -79,11 +85,16 @@ export function DisponibilidadTab() {
         
         {/* Selector de profesional */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Seleccionar Profesional</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            {isProfesional ? "Mi Profesional Asignado" : "Seleccionar Profesional"}
+          </label>
           <select
             value={selectedProfId}
             onChange={(e) => setSelectedProfId(e.target.value)}
-            className="w-full max-w-sm rounded-lg border border-white/10 bg-[#121212] px-4 py-2 text-white focus:border-[#E53935] focus:outline-none"
+            disabled={isProfesional}
+            className={`w-full max-w-sm rounded-lg border border-white/10 bg-[#121212] px-4 py-2 text-white focus:border-[#E53935] focus:outline-none ${
+              isProfesional ? "opacity-60 cursor-not-allowed" : ""
+            }`}
           >
             <option value="" disabled>Seleccione un profesional</option>
             {profesionales.map(p => (

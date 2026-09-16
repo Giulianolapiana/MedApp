@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { HeartPulse } from 'lucide-react';
 
 export function Footer() {
@@ -14,9 +15,7 @@ export function Footer() {
         </div>
         
         <div className="flex gap-6 text-sm text-text-secondary">
-          <a href="#" className="hover:text-brand-600">Términos</a>
-          <a href="#" className="hover:text-brand-600">Privacidad</a>
-          <a href="#" className="hover:text-brand-600">Contacto</a>
+          <Link to="/privacidad" className="hover:text-brand-600">Privacidad</Link>
         </div>
         
         <p className="text-sm text-text-muted">

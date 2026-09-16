@@ -1,0 +1,208 @@
+{
+  "name": "MedAPP - Calendar",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "turnos",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "id": "7456aad0-6926-4933-b9d5-8429f4ad37df",
+      "name": "Webhook MedAPP",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        0
+      ],
+      "webhookId": "medapp-turnos-webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.accion }}",
+              "value2": "CREAR"
+            }
+          ]
+        }
+      },
+      "id": "f2b30728-376d-43f6-90c7-3d07b860eee1",
+      "name": "¿Es CREAR?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        32,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "=giulianolapianam@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ $json.body.inicio_utc }}",
+        "end": "={{ DateTime.fromISO($json.body.inicio_utc).plus({ minutes: 30 }).toISO() }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $json.body.medico_email }}"
+          ],
+          "summary": "=Turno reservado por: {{ $json.body.paciente }} - Tel: {{ $json.body.telefono }}"
+        }
+      },
+      "id": "5d94d7f8-d8ed-40dc-8924-3e89a7f34a8a",
+      "name": "Google Calendar (Crear)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -128
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "1ZId1pCWKAmYOxUw",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"google_event_id\": \"{{ $json.id }}\"\n}",
+        "options": {}
+      },
+      "id": "b7b10efd-7583-4236-8d2c-f335c031e4b6",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.accion }}",
+              "value2": "CANCELAR"
+            }
+          ]
+        }
+      },
+      "id": "8b8b08f1-fa23-4206-a21d-191ba7469ebb",
+      "name": "¿Es CANCELAR?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        272,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "giulianolapianam@gmail.com",
+          "mode": "id"
+        },
+        "eventId": "={{ $json.body.google_event_id }}",
+        "options": {}
+      },
+      "id": "3faa0fa9-204a-4718-8c55-02a0352b89ea",
+      "name": "Google Calendar (Borrar)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        544,
+        96
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "1ZId1pCWKAmYOxUw",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook MedAPP": {
+      "main": [
+        [
+          {
+            "node": "¿Es CREAR?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es CREAR?": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar (Crear)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Es CANCELAR?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar (Crear)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es CANCELAR?": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar (Borrar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ae5078de-e9ed-46d3-b74d-ed2e83253d53",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
+  },
+  "nodeGroups": [],
+  "id": "dCLBpjhKU5G7jQJ2",
+  "tags": []
+}

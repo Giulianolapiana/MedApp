@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "dev-giuliano" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: |
+          cd backend && pnpm install
+
+      - name: Run Linter (Oxlint)
+        run: npx oxlint@latest -c .oxlintrc.json
+
+      - name: Run Backend Unit Tests
+        run: cd backend && pnpm test
+
+  integration:
+    name: Integración con PostgreSQL (concurrencia, zona horaria, FSM)
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: medapp_test
+        ports: [ "5432:5432" ]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/medapp_test
+      SUPABASE_URL: http://localhost
+      SUPABASE_SERVICE_ROLE_KEY: ci-no-usado
+      N8N_API_KEY: ci-clave-de-prueba-de-al-menos-32-caracteres
+      INTEGRACION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+      - name: Instalar dependencias
+        run: cd backend && pnpm install
+      - name: Crear esquema y aplicar migración
+        run: |
+          cd backend
+          npx drizzle-kit push --force
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-16_ronda1_integridad.sql
+      - name: Pruebas de integración
+        run: cd backend && pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Build Backend
+        run: |
+          cd backend
+          pnpm install
+          pnpm build
+
+      - name: Build Frontend Admin
+        run: |
+          cd ParteAdmin/Frontend
+          pnpm install
+          pnpm build
+
+      - name: Build Frontend Paciente
+        run: |
+          cd PartePaciente/paciente-app
+          pnpm install
+          pnpm build

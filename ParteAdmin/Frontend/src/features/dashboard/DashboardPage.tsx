@@ -2,8 +2,18 @@ import { LayoutDashboard, Clock, UserRound, ArrowRight, Loader2 } from "lucide-r
 import { useDashboardStats } from "./useDashboardStats";
 import type { EstadoTurno } from "../../types/database.types";
 
+import { useAuth } from "../../features/auth/AuthContext";
+import { Navigate } from "react-router-dom";
+
 export function DashboardPage() {
-  const { turnosHoy, ocupacion, pendientes, noShowsHoy, proximosTurnos, loading, error } = useDashboardStats();
+  const { profile } = useAuth();
+  
+  if (profile?.rol === "PROFESIONAL") {
+    return <Navigate to="/agenda" replace />;
+  }
+
+  const stats = useDashboardStats();
+  const { turnosHoy, ocupacion, pendientes, noShowsHoy, proximosTurnos, loading, error } = stats;
 
   if (loading) {
     return (
@@ -33,11 +43,15 @@ export function DashboardPage() {
       </div>
 
       {/* KPI Widgets */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <KpiCard label="Turnos hoy" value={turnosHoy} />
-        <KpiCard label="Ocupación (Est.)" value={`${ocupacion}%`} />
         <KpiCard label="Pendientes" value={pendientes} />
+        <KpiCard label="Confirmados" value={stats.confirmados ?? 0} />
+        <KpiCard label="Cancelados" value={stats.cancelados ?? 0} isAlert={stats.tasaCancelacion > 20} />
         <KpiCard label="No-show hoy" value={noShowsHoy} isAlert={noShowsHoy > 0} />
+        <KpiCard label="Asistencia" value={`${stats.tasaAsistencia ?? 0}%`} />
+        <KpiCard label="Cancelación" value={`${stats.tasaCancelacion ?? 0}%`} />
+        <KpiCard label="Ocupación (Est.)" value={`${ocupacion}%`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -75,7 +89,7 @@ export function DashboardPage() {
                     <div className="flex flex-col items-end gap-2">
                       <div className="flex items-center gap-1.5 text-sm font-medium text-gray-300">
                         <Clock size={14} className="text-gray-500" />
-                        {new Date(turno.fecha_hora_inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(turno.fecha_hora_inicio).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Mendoza' })}
                       </div>
                       <EstadoBadge estado={turno.estado} />
                     </div>

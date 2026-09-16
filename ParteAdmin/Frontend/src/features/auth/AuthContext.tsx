@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
+import { fetchApi } from "../../lib/api";
 import type { RolUsuario } from "../../types/database.types";
 
 // ---------------------------------------------------------------------------
@@ -17,6 +18,7 @@ interface UserProfile {
   clinica_id: string;
   nombre: string;
   rol: RolUsuario;
+  profesional_id?: string;
 }
 
 interface AuthContextValue {
@@ -41,21 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch the user's admin profile from usuarios_administrativos
+  // Fetch the user's admin profile from backend
   async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("usuarios_administrativos")
-      .select("id, clinica_id, nombre, rol")
-      .eq("id", userId)
-      .single();
-
-    if (error || !data) {
+    try {
+      const { user: profileData } = await fetchApi<any>("/auth/me");
+      setProfile(profileData);
+    } catch (error) {
       console.error("Error al obtener perfil:", error);
       setProfile(null);
-      return;
     }
-
-    setProfile(data);
   }
 
   useEffect(() => {
@@ -63,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
-        fetchProfile(s.user.id);
+        fetchProfile(s.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     // 2. Listen for auth state changes (login, logout, token refresh)

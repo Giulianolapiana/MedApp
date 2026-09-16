@@ -1,34 +1,27 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../../lib/supabase";
+import { fetchApi } from "../../../lib/api";
 import type { Database } from "../../../types/database.types";
 
 export type Disponibilidad = Database["public"]["Tables"]["disponibilidad"]["Row"];
 export type DisponibilidadInsert = Database["public"]["Tables"]["disponibilidad"]["Insert"];
 
-export function useDisponibilidad(profesionalId: string | null, clinicaId: string | null) {
+export function useDisponibilidad(profesionalId: string | null) {
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profesionalId && clinicaId) {
+    if (profesionalId) {
       fetchDisponibilidad();
     } else {
       setDisponibilidad([]);
     }
-  }, [profesionalId, clinicaId]);
+  }, [profesionalId]);
 
   async function fetchDisponibilidad() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("disponibilidad")
-        .select("*")
-        .eq("profesional_id", profesionalId!)
-        .eq("clinica_id", clinicaId!)
-        .order("dia_semana", { ascending: true });
-
-      if (error) throw error;
+      const data = await fetchApi<Disponibilidad[]>(`/disponibilidad/${profesionalId}`);
       setDisponibilidad(data || []);
       setError(null);
     } catch (err: any) {
@@ -38,18 +31,22 @@ export function useDisponibilidad(profesionalId: string | null, clinicaId: strin
     }
   }
 
-  async function saveDisponibilidad(updates: DisponibilidadInsert[]) {
+  async function saveDisponibilidad(updates: Omit<DisponibilidadInsert, "clinica_id">[]) {
     try {
       setLoading(true);
-      // Supabase upsert requires primary keys or unique constraints.
-      // Since it's easier, we can just delete existing for this professional and insert the new array,
-      // or use upsert if we map the IDs correctly. Let's use upsert.
-      const { data, error } = await supabase
-        .from("disponibilidad")
-        .upsert(updates)
-        .select();
+      
+      const cleanUpdates = updates.map(u => ({
+        dia_semana: u.dia_semana,
+        horario_inicio: u.horario_inicio.slice(0, 5),
+        horario_fin: u.horario_fin.slice(0, 5),
+        habilitado: u.habilitado
+      }));
+
+      const data = await fetchApi<Disponibilidad[]>(`/disponibilidad/${profesionalId}`, {
+        method: "PUT",
+        body: JSON.stringify({ items: cleanUpdates }),
+      });
         
-      if (error) throw error;
       setDisponibilidad(data || []);
       return true;
     } catch (err: any) {
