@@ -8,12 +8,12 @@ import { Navigate } from "react-router-dom";
 export function DashboardPage() {
   const { profile } = useAuth();
   
+  const stats = useDashboardStats();
+  const { turnosHoy, ocupacion, pendientes, noShowsHoy, proximosTurnos, loading, error } = stats;
+
   if (profile?.rol === "PROFESIONAL") {
     return <Navigate to="/agenda" replace />;
   }
-
-  const stats = useDashboardStats();
-  const { turnosHoy, ocupacion, pendientes, noShowsHoy, proximosTurnos, loading, error } = stats;
 
   if (loading) {
     return (

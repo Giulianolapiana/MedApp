@@ -1,7 +1,7 @@
 import { db } from '../../core/database.js';
 import { eq, and, gte, lt, inArray } from 'drizzle-orm';
 import { rangoDiaLocal, partesLocales, DURACION_TURNO_MINUTOS } from '../../core/tiempo.js';
-import { NotFoundError, ValidationError } from '../../core/errors.js';
+
 import { DisponibilidadRepository } from './disponibilidad.repository.js';
 import { turnos } from '../../db/schema.js';
 import { GuardarDisponibilidadType } from './disponibilidad.schemas.js';
