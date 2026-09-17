@@ -88,6 +88,13 @@ En Supabase → Authentication → URL Configuration, agregar `https://panel.ver
 En orden, desde el SQL Editor de Supabase (con backup previo):
 1. `backend/sql/2026-09-16_ronda1_integridad.sql` (primero solo la sección 0).
 2. `backend/sql/2026-09-17_ronda2_respaldos.sql`.
+3. `backend/sql/2026-09-18_ronda3_endurecimiento.sql` (elimina el webhook heredado a ngrok,
+   el acceso anónimo y las escrituras directas con JWT; limpia claves foráneas duplicadas).
+4. Regenerar `backend/sql/esquema.sql` con `pg_dump --schema-only` para que el repositorio
+   refleje la base vigente.
+
+> No ejecutar `drizzle-kit push` contra producción: recrea claves foráneas duplicadas.
+> Los cambios de esquema se aplican con scripts SQL versionados en `backend/sql/`.
 
 ## 6. Antes de abrir a pacientes
 
