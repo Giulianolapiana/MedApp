@@ -1,0 +1,295 @@
+{
+  "configuracion": {
+    "semilla": 20260916,
+    "escenarios": 10000,
+    "profesionales": 3,
+    "slots_por_dia": 16,
+    "dias_habiles": 20,
+    "capacidad_mensual": 960,
+    "corridas_escenario_central": 1000,
+    "corridas_por_celda_grilla": 400
+  },
+  "parametros": {
+    "p0": {
+      "desc": "Tasa de ausentismo de línea base (sin recordatorio sistemático)",
+      "dist": "Uniforme(0,23; 0,34)",
+      "fuente": "Giunta (2019): 23 %–34 % en consultas programadas (HIBA)"
+    },
+    "rr": {
+      "desc": "Riesgo relativo de asistencia con recordatorio por mensajería móvil",
+      "dist": "LogNormal(ln 1,14; EE 0,051) ⇒ IC95 % 1,03–1,26",
+      "fuente": "Gurol-Urganci et al. (2013), revisión Cochrane, 7 estudios, n = 5.841"
+    },
+    "tope_olvido": {
+      "desc": "Proporción máxima de ausencias evitables por recordatorio (causa: olvido)",
+      "dist": "Fijo 0,44",
+      "fuente": "Briatore et al. (2020): el olvido explica el 44 % de las inasistencias"
+    },
+    "entrega": {
+      "desc": "Proporción de recordatorios efectivamente entregados (teléfono válido, WhatsApp activo)",
+      "dist": "Uniforme(0,85; 0,98)",
+      "fuente": "Supuesto del autor"
+    },
+    "cancela": {
+      "desc": "Proporción de ausentes residuales que avisan por el canal bidireccional",
+      "dist": "Uniforme(0,10; 0,50)",
+      "fuente": "Supuesto del autor"
+    },
+    "reocupa": {
+      "desc": "Probabilidad de reasignar un turno liberado con aviso (sin lista de espera)",
+      "dist": "Uniforme(0,00; 0,40)",
+      "fuente": "Supuesto del autor"
+    },
+    "llenado": {
+      "desc": "Proporción de la capacidad reservada",
+      "dist": "Uniforme(0,75; 0,95)",
+      "fuente": "Supuesto del autor"
+    },
+    "autogestion": {
+      "desc": "Proporción de reservas que pasan a autogestión (web o WhatsApp)",
+      "dist": "Uniforme(0,20; 0,70)",
+      "fuente": "Supuesto del autor"
+    }
+  },
+  "resultados_incertidumbre": {
+    "no_show_base": {
+      "media": 0.28490822055467796,
+      "desvio": 0.035504039973153975,
+      "p05": 0.22924854956891572,
+      "mediana": 0.2845303867403315,
+      "p95": 0.3427292383349277
+    },
+    "no_show_medapp": {
+      "media": 0.15598069818887572,
+      "desvio": 0.04084631283148161,
+      "p05": 0.09782608695652174,
+      "mediana": 0.1514159801991884,
+      "p95": 0.23058837161747667
+    },
+    "reduccion_no_show_rel": {
+      "media": 0.453697179043132,
+      "desvio": 0.12029100259089193,
+      "p05": 0.23495427280571066,
+      "mediana": 0.4650861222726629,
+      "p95": 0.6324635490260043
+    },
+    "ocupacion_base": {
+      "media": 0.6077266666666666,
+      "desvio": 0.051347011751393,
+      "p05": 0.5239583333333333,
+      "mediana": 0.6072916666666667,
+      "p95": 0.69375
+    },
+    "ocupacion_medapp": {
+      "media": 0.6866996875,
+      "desvio": 0.05959114791537832,
+      "p05": 0.5875,
+      "mediana": 0.6854166666666667,
+      "p95": 0.784375
+    },
+    "delta_ocupacion_pp": {
+      "media": 0.07897302083333334,
+      "desvio": 0.030743895651488353,
+      "p05": 0.025000000000000022,
+      "mediana": 0.08020833333333333,
+      "p95": 0.12708333333333333
+    },
+    "delta_ocupacion_rel": {
+      "media": 0.13091928053150567,
+      "desvio": 0.05245224087845711,
+      "p05": 0.04119740030843807,
+      "mediana": 0.13217391304347825,
+      "p95": 0.2154422743291683
+    },
+    "reduccion_tiempo_asignacion": {
+      "media": 0.4509068659962423,
+      "desvio": 0.14431088243717333,
+      "p05": 0.22517314033956531,
+      "mediana": 0.45089249128689846,
+      "p95": 0.6756769270813581
+    }
+  },
+  "probabilidad_cumplir_umbral": {
+    "ausentismo_reduccion_rel_40": 0.6955,
+    "ocupacion_incremento_rel_15": 0.3625,
+    "ocupacion_incremento_15_pp": 0.0054,
+    "tiempo_asignacion_reduccion_50": 0.402
+  },
+  "escenario_central": {
+    "parametros": {
+      "p0": 0.285,
+      "rr": 1.14,
+      "entrega": 0.915,
+      "cancela": 0.3,
+      "reocupa": 0.2,
+      "llenado": 0.85,
+      "autogestion": 0.45
+    },
+    "fraccion_evitada": 0.3512280701754385,
+    "resultados": {
+      "no_show_base": {
+        "media": 0.2851107519191917,
+        "desvio": 0.015565196167896844,
+        "p05": 0.2588449692927305,
+        "mediana": 0.2850270473545662,
+        "p95": 0.3096738513896767
+      },
+      "no_show_medapp": {
+        "media": 0.14982436255410284,
+        "desvio": 0.01297248518539025,
+        "p05": 0.12842228951055273,
+        "mediana": 0.14935064935064934,
+        "p95": 0.17164366139228668
+      },
+      "reduccion_no_show_rel": {
+        "media": 0.4729666723136018,
+        "desvio": 0.05362889479526788,
+        "p05": 0.3793741215855252,
+        "mediana": 0.4768459989184059,
+        "p95": 0.5584375207827432
+      },
+      "ocupacion_base": {
+        "media": 0.6078854166666667,
+        "desvio": 0.015540873656170448,
+        "p05": 0.5822916666666667,
+        "mediana": 0.6078125,
+        "p95": 0.6333854166666666
+      },
+      "ocupacion_medapp": {
+        "media": 0.693571875,
+        "desvio": 0.015188498887024662,
+        "p05": 0.66875,
+        "mediana": 0.69375,
+        "p95": 0.71875
+      },
+      "delta_ocupacion_pp": {
+        "media": 0.08568645833333334,
+        "desvio": 0.01760705174283572,
+        "p05": 0.0572395833333333,
+        "mediana": 0.0864583333333333,
+        "p95": 0.11458333333333337
+      },
+      "delta_ocupacion_rel": {
+        "media": 0.14148463280487925,
+        "desvio": 0.03127557325427432,
+        "p05": 0.09106225500597473,
+        "mediana": 0.14153337762106732,
+        "p95": 0.1941931504435176
+      },
+      "reduccion_tiempo_asignacion": {
+        "media": 0.4500000000000001,
+        "desvio": 1.110778552818352e-16,
+        "p05": 0.45,
+        "mediana": 0.45,
+        "p95": 0.45
+      }
+    }
+  },
+  "sensibilidad": [
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "p0",
+      "spearman": -0.2150171505767517
+    },
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "rr",
+      "spearman": 0.6063105795763816
+    },
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "entrega",
+      "spearman": 0.17960608962421615
+    },
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "cancela",
+      "spearman": 0.525285250761156
+    },
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "reocupa",
+      "spearman": -0.004736923541426079
+    },
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "llenado",
+      "spearman": -0.009138083821490494
+    },
+    {
+      "resultado": "reduccion_no_show_rel",
+      "parametro": "autogestion",
+      "spearman": 0.01243051940245436
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "p0",
+      "spearman": 0.1779217536377538
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "rr",
+      "spearman": 0.6880272670639008
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "entrega",
+      "spearman": 0.11267153886453878
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "cancela",
+      "spearman": 0.08672708530998303
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "reocupa",
+      "spearman": 0.13623308565066844
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "llenado",
+      "spearman": -0.0020509813223375264
+    },
+    {
+      "resultado": "delta_ocupacion_rel",
+      "parametro": "autogestion",
+      "spearman": 0.012269870574930447
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "p0",
+      "spearman": 0.07116761482909631
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "rr",
+      "spearman": 0.7096873075555432
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "entrega",
+      "spearman": 0.11278196101887393
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "cancela",
+      "spearman": 0.08869324639343416
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "reocupa",
+      "spearman": 0.1349963027072953
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "llenado",
+      "spearman": 0.173723324518407
+    },
+    {
+      "resultado": "delta_ocupacion_pp",
+      "parametro": "autogestion",
+      "spearman": 0.012419930254468466
+    }
+  ]
+}

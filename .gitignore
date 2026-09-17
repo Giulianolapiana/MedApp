@@ -23,5 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 #environment variables
-.env    
-.env.example
+.env
+!.env.example
+
+# Artefactos locales
+scratch/
+playwright-report/
+test-results/
+*.patch
+evaluacion/simulacion/__pycache__/

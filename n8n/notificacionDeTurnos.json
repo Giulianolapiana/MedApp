@@ -24,7 +24,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "http://localhost:3000/api/v1/turnos/recordatorios",
+        "url": "https://api.verticedev.online/api/v1/turnos/recordatorios",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -233,7 +233,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://localhost:3000/api/v1/turnos/recordatorios/{{ $('Variables Chatwoot').item.json.turno_id }}/enviado",
+        "url": "=https://api.verticedev.online/api/v1/turnos/recordatorios/{{ $('Variables Chatwoot').item.json.turno_id }}/enviado",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,

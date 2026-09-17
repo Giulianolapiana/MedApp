@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Fetch the user's admin profile from backend
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(_userId?: string) {
     try {
       const { user: profileData } = await fetchApi<any>("/auth/me");
       setProfile(profileData);

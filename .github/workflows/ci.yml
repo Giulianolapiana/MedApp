@@ -17,12 +17,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9
 
       - name: Install Dependencies
         run: |
@@ -57,10 +57,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9
       - name: Instalar dependencias
         run: cd backend && pnpm install
       - name: Crear esquema y aplicar migración
@@ -68,6 +68,7 @@ jobs:
           cd backend
           npx drizzle-kit push --force
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-16_ronda1_integridad.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-17_ronda2_respaldos.sql
       - name: Pruebas de integración
         run: cd backend && pnpm test
 
@@ -82,12 +83,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9
 
       - name: Build Backend
         run: |

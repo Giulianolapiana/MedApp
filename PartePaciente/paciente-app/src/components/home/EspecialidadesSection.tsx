@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useReserva } from '../../context/ReservaContext';
 import { getEspecialidades } from '../../services/especialidades.service';
 import type { Especialidad } from '../../types';
 import { 
-  Stethoscope, HeartPulse, Baby, Eye, Bone, Brain, Activity, Smile
+  Stethoscope, HeartPulse, Baby, Eye, Bone, Activity, Smile
 } from 'lucide-react';
 
 const getIconForEspecialidad = (nombre: string) => {

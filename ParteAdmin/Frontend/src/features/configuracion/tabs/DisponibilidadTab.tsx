@@ -18,7 +18,7 @@ export function DisponibilidadTab() {
   const { profesionales, clinicaId } = useProfesionales();
   const [selectedProfId, setSelectedProfId] = useState<string>("");
 
-  const { disponibilidad, loading, error, saveDisponibilidad } = useDisponibilidad(selectedProfId, clinicaId);
+  const { disponibilidad, loading, error, saveDisponibilidad } = useDisponibilidad(selectedProfId);
 
   // Local state to manage edits before saving
   const [localDisp, setLocalDisp] = useState<Record<number, { habilitado: boolean; inicio: string; fin: string; id?: string }>>({});

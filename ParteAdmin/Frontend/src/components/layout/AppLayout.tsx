@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useInactivityLogout } from "../../features/auth/useInactivityLogout";
 import {
@@ -22,7 +22,6 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
 
   // Activa el logout automático tras 30 minutos de inactividad
   useInactivityLogout(30);

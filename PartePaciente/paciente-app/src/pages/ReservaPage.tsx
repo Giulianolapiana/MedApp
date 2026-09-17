@@ -1,7 +1,7 @@
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { useReserva } from '../context/ReservaContext';
-import { CheckCircle2, ChevronRight, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Paso1Especialidad } from '../components/reserva/Paso1Especialidad';
 import { Paso2Medico } from '../components/reserva/Paso2Medico';
 import { Paso3FechaHora } from '../components/reserva/Paso3FechaHora';

@@ -1,4 +1,4 @@
-import { ENV } from "../../core/config";
+import { ENV } from "../../core/config.js";
 
 interface N8NWebhookPayload {
   accion: "CREAR" | "ACTUALIZAR" | "CANCELAR";
@@ -12,6 +12,8 @@ interface N8NWebhookPayload {
   google_event_id: string | null;
   telefono: string;
   paciente_email: string | null;
+  /** Fecha y hora legibles en la zona del consultorio, para correo y WhatsApp (A-01). */
+  cuando: string;
   motivo: string;
   profesional: {
     nombre: string;
@@ -37,6 +39,8 @@ export class N8NService {
           "x-api-key": ENV.N8N_API_KEY,
         },
         body: JSON.stringify(payload),
+        // Si n8n o Google tardan, la reserva del paciente no queda esperando
+        signal: AbortSignal.timeout(8000),
       });
 
       if (!response.ok) {
