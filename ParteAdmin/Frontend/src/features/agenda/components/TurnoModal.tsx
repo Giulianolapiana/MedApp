@@ -8,7 +8,7 @@ type Paciente = Database["public"]["Tables"]["pacientes"]["Row"];
 
 interface TurnoModalProps {
   onClose: () => void;
-  onSave: (turnoData: any) => Promise<void>;
+  onSave: (turnoData: any) => Promise<unknown>;
   profesionales: Profesional[];
   initialDate?: Date;
   initialProfesionalId?: string;

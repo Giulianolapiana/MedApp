@@ -14,6 +14,8 @@ const envSchema = z.object({
   // Sin valor por defecto: una clave publicada en el repositorio no es un secreto.
   N8N_API_KEY: z.string().min(32, 'N8N_API_KEY debe tener al menos 32 caracteres'),
   ZONA_HORARIA: z.string().default('America/Argentina/Mendoza'),
+  // Orígenes permitidos (frontends en Vercel), separados por coma
+  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:5174'),
 });
 
 const _env = envSchema.safeParse(process.env);

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, integer, pgEnum } from 'drizzle-orm/pg-core';
+import { bigint, pgTable, uuid, text, timestamp, boolean, integer, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ─── Enums ──────────────────────────────────────────────────────
@@ -116,6 +116,9 @@ export const backupsAuditoria = pgTable('backups_auditoria', {
   tipo_ejecucion: text('tipo_ejecucion').notNull(),
   estado: text('estado').notNull(),
   archivo_url: text('archivo_url'),
+  archivo_ruta: text('archivo_ruta'),
+  tamano_bytes: bigint('tamano_bytes', { mode: 'number' }),
+  detalle: text('detalle'),
   creado_en: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 

@@ -41,7 +41,7 @@ export class BaseRepository<
   async getById(id: string, tenantId?: string): Promise<TEntity | null> {
     const result = await this.db
       .select()
-      .from(this.table)
+      .from(this.table as any)
       .where(this.buildWhere(id, tenantId))
       .limit(1);
       
@@ -55,7 +55,7 @@ export class BaseRepository<
   }
 
   async listAll(skip: number = 0, limit: number = 20): Promise<TEntity[]> {
-    let query = this.db.select().from(this.table).offset(skip).limit(limit);
+    let query = this.db.select().from(this.table as any).offset(skip).limit(limit);
     
     if (this.softDeleteColumn) {
       query = query.where(isNull(this.softDeleteColumn)) as any;

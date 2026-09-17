@@ -74,7 +74,7 @@ export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalPro
               <label className="block text-sm font-medium text-gray-300 mb-1">Estado</label>
               <select
                 value={estado}
-                onChange={(e) => { setEstado(e.target.value); setError(""); }}
+                onChange={(e) => { setEstado(e.target.value as typeof estado); setError(""); }}
                 className="w-full rounded-lg border border-white/10 bg-[#1a1a1a] px-4 py-2 text-white focus:border-[#E53935] focus:outline-none"
               >
                 <option value="pendiente">Pendiente</option>

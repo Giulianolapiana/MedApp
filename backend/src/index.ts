@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger as pinoLogger } from 'hono-pino';
 import { logger } from './core/logger.js';
+import { ENV } from './core/config.js';
 
 // Error handler
 import { errorHandler } from './middleware/error-handler.js';
@@ -21,7 +22,7 @@ const app = new Hono();
 // ─── Middlewares globales ───────────────────────────────────────
 app.use('*', pinoLogger({ pino: logger }));
 app.use('/api/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  origin: ENV.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean),
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
 }));

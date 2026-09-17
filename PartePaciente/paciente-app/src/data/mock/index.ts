@@ -1,4 +1,4 @@
-import type { Especialidad, Medico, DisponibilidadDia, Slot } from '../../types';
+import type { Especialidad, Medico, Slot } from '../../types';
 
 export const mockEspecialidades: Especialidad[] = [
   { id: 'clinica-medica', nombre: 'Clínica Médica' },

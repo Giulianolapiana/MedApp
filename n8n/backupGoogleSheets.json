@@ -1,5 +1,5 @@
 {
-  "name": "MedAPP - Backup a Google Sheets (Cron Nocturno)",
+  "name": "MedAPP - Tablero operativo de agenda (Google Sheets, nocturno)",
   "nodes": [
     {
       "parameters": {
@@ -16,19 +16,56 @@
       "name": "Todas las noches a las 23:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [-700, 0]
+      "position": [
+        -700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-clinica",
+              "name": "clinica_id",
+              "value": "9569ad65-a5fd-4692-9804-be6ae60fad76",
+              "type": "string"
+            },
+            {
+              "id": "cfg-sheet",
+              "name": "planilla_url",
+              "value": "https://docs.google.com/spreadsheets/d/REEMPLAZAR_ID_PLANILLA/edit",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cfg-tablero",
+      "name": "Configuración de la clínica",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        0
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id, nombre_completo, telefono_whatsapp, email, fecha_nacimiento, activo, creado_en FROM pacientes ORDER BY creado_en DESC",
-        "options": {}
+        "query": "SELECT t.id,\n       to_char(t.fecha_hora_inicio AT TIME ZONE 'America/Argentina/Mendoza', 'YYYY-MM-DD') AS fecha,\n       to_char(t.fecha_hora_inicio AT TIME ZONE 'America/Argentina/Mendoza', 'HH24:MI') AS hora,\n       pr.nombre AS profesional,\n       p.nombre_completo AS paciente,\n       p.telefono_whatsapp AS telefono,\n       t.estado,\n       t.canal_reserva,\n       to_char(now() AT TIME ZONE 'America/Argentina/Mendoza', 'YYYY-MM-DD HH24:MI') AS actualizado\nFROM turnos t\nJOIN pacientes p ON p.id = t.paciente_id\nJOIN profesionales pr ON pr.id = t.profesional_id\nWHERE t.clinica_id = $1::uuid\n  AND t.fecha_hora_inicio >= now() - interval '1 day'\n  AND t.fecha_hora_inicio <  now() + interval '14 days'\nORDER BY t.fecha_hora_inicio",
+        "options": {
+          "queryReplacement": "={{ $json.clinica_id }}"
+        }
       },
-      "id": "pg-pacientes",
-      "name": "Query Pacientes",
+      "id": "q-agenda",
+      "name": "Agenda próximos 14 días (clínica)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-480, 0],
+      "position": [
+        -260,
+        0
+      ],
       "credentials": {
         "postgres": {
           "id": "CONFIGURAR_POSTGRES",
@@ -42,25 +79,31 @@
         "documentId": {
           "__rl": true,
           "mode": "url",
-          "value": "URL_DE_TU_SPREADSHEET_AQUI"
+          "value": "={{ $('Configuración de la clínica').item.json.planilla_url }}"
         },
         "sheetName": {
           "__rl": true,
           "mode": "list",
-          "value": "Pacientes",
-          "cachedResultName": "Pacientes"
+          "value": "Agenda",
+          "cachedResultName": "Agenda"
         },
         "columns": {
           "mappingMode": "autoMapInputData",
-          "matchingColumns": ["id"]
+          "matchingColumns": [
+            "id"
+          ]
         },
         "options": {}
       },
-      "id": "sheets-pacientes",
-      "name": "Sheets → Pacientes",
+      "id": "gs-agenda",
+      "name": "Sheets → Agenda",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [-260, 0],
+      "position": [
+        -40,
+        0
+      ],
+      "executeOnce": false,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "CONFIGURAR_GSHEETS",
@@ -70,101 +113,28 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT t.id, p.nombre_completo AS paciente, p.telefono_whatsapp AS telefono_paciente, pr.nombre AS profesional, pr.especialidad, t.fecha_hora_inicio, t.estado, t.canal_reserva, t.google_event_id, t.creado_en FROM turnos t LEFT JOIN pacientes p ON t.paciente_id = p.id LEFT JOIN profesionales pr ON t.profesional_id = pr.id ORDER BY t.fecha_hora_inicio DESC",
+        "method": "POST",
+        "url": "https://api.verticedev.online/api/v1/backups/registro",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clinica_id: $('Configuración de la clínica').item.json.clinica_id, tipo_artefacto: 'tablero_agenda', tipo_ejecucion: 'automatica', estado: 'completado', archivo_url: $('Configuración de la clínica').item.json.planilla_url, detalle: `${$('Agenda próximos 14 días (clínica)').all().length} turnos exportados` }) }}",
         "options": {}
       },
-      "id": "pg-turnos",
-      "name": "Query Turnos (con JOINs)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [-40, 0],
+      "id": "reg-tablero",
+      "name": "Registrar tablero en MedApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        0
+      ],
+      "executeOnce": true,
       "credentials": {
-        "postgres": {
-          "id": "CONFIGURAR_POSTGRES",
-          "name": "Supabase PostgreSQL"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "appendOrUpdate",
-        "documentId": {
-          "__rl": true,
-          "mode": "url",
-          "value": "URL_DE_TU_SPREADSHEET_AQUI"
-        },
-        "sheetName": {
-          "__rl": true,
-          "mode": "list",
-          "value": "Turnos",
-          "cachedResultName": "Turnos"
-        },
-        "columns": {
-          "mappingMode": "autoMapInputData",
-          "matchingColumns": ["id"]
-        },
-        "options": {}
-      },
-      "id": "sheets-turnos",
-      "name": "Sheets → Turnos",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [180, 0],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CONFIGURAR_GSHEETS",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT id, nombre, especialidad, google_calendar_id, activo, creado_en FROM profesionales ORDER BY nombre ASC",
-        "options": {}
-      },
-      "id": "pg-profesionales",
-      "name": "Query Profesionales",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [400, 0],
-      "credentials": {
-        "postgres": {
-          "id": "CONFIGURAR_POSTGRES",
-          "name": "Supabase PostgreSQL"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "appendOrUpdate",
-        "documentId": {
-          "__rl": true,
-          "mode": "url",
-          "value": "URL_DE_TU_SPREADSHEET_AQUI"
-        },
-        "sheetName": {
-          "__rl": true,
-          "mode": "list",
-          "value": "Profesionales",
-          "cachedResultName": "Profesionales"
-        },
-        "columns": {
-          "mappingMode": "autoMapInputData",
-          "matchingColumns": ["id"]
-        },
-        "options": {}
-      },
-      "id": "sheets-profesionales",
-      "name": "Sheets → Profesionales",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [620, 0],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CONFIGURAR_GSHEETS",
-          "name": "Google Sheets account"
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
         }
       }
     }
@@ -175,62 +145,40 @@
       "main": [
         [
           {
-            "node": "Query Pacientes",
+            "node": "Configuración de la clínica",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Query Pacientes": {
+    "Configuración de la clínica": {
       "main": [
         [
           {
-            "node": "Sheets → Pacientes",
+            "node": "Agenda próximos 14 días (clínica)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Sheets → Pacientes": {
+    "Agenda próximos 14 días (clínica)": {
       "main": [
         [
           {
-            "node": "Query Turnos (con JOINs)",
+            "node": "Sheets → Agenda",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Query Turnos (con JOINs)": {
+    "Sheets → Agenda": {
       "main": [
         [
           {
-            "node": "Sheets → Turnos",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sheets → Turnos": {
-      "main": [
-        [
-          {
-            "node": "Query Profesionales",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Query Profesionales": {
-      "main": [
-        [
-          {
-            "node": "Sheets → Profesionales",
+            "node": "Registrar tablero en MedApp",
             "type": "main",
             "index": 0
           }

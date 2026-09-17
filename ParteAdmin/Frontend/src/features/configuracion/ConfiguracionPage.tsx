@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, Stethoscope, Clock, HardDrive, ShieldCheck, BookOpen, User } from "lucide-react";
+import { Settings, Stethoscope, Clock, HardDrive, BookOpen, User } from "lucide-react";
 import { ProfesionalesTab } from "./tabs/ProfesionalesTab";
 import { DisponibilidadTab } from "./tabs/DisponibilidadTab";
 import { EspecialidadesTab } from "./tabs/EspecialidadesTab";

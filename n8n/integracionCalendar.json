@@ -5,23 +5,23 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "turnos",
+        "authentication": "headerAuth",
         "responseMode": "responseNode",
-        "options": {},
-        "authentication": "headerAuth"
+        "options": {}
       },
-      "id": "7456aad0-6926-4933-b9d5-8429f4ad37df",
+      "id": "186ce62f-ee67-4b44-96de-b82a93be54eb",
       "name": "Webhook MedAPP",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        -192,
-        0
+        -480,
+        128
       ],
       "webhookId": "medapp-turnos-webhook",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REEMPLAZAR_AL_IMPORTAR",
-          "name": "MedApp API (x-api-key)"
+          "id": "HG67TPNVEBJJD82w",
+          "name": "Header Auth account"
         }
       }
     },
@@ -36,13 +36,13 @@
           ]
         }
       },
-      "id": "f2b30728-376d-43f6-90c7-3d07b860eee1",
+      "id": "3f5c7c1e-8cec-48d9-9ecf-8ecaddead269",
       "name": "¿Es CREAR?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        32,
-        0
+        -256,
+        128
       ]
     },
     {
@@ -61,13 +61,13 @@
           "summary": "=Turno reservado por: {{ $json.body.paciente }} - Tel: {{ $json.body.telefono }}"
         }
       },
-      "id": "5d94d7f8-d8ed-40dc-8924-3e89a7f34a8a",
+      "id": "4ba3ea44-1ad0-45e9-9f24-bab455abcfb9",
       "name": "Google Calendar (Crear)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
-        288,
-        -128
+        0,
+        0
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
@@ -82,13 +82,13 @@
         "responseBody": "={\n  \"google_event_id\": \"{{ $json.id }}\"\n}",
         "options": {}
       },
-      "id": "b7b10efd-7583-4236-8d2c-f335c031e4b6",
+      "id": "f0a23f84-fc5c-42b1-b2f0-67510abc86cc",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        560,
-        -128
+        240,
+        0
       ]
     },
     {
@@ -102,13 +102,13 @@
           ]
         }
       },
-      "id": "8b8b08f1-fa23-4206-a21d-191ba7469ebb",
+      "id": "95caed30-503f-40e2-bb0c-5d025fd2b762",
       "name": "¿Es CANCELAR?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        272,
-        112
+        -16,
+        240
       ]
     },
     {
@@ -122,18 +122,41 @@
         "eventId": "={{ $json.body.google_event_id }}",
         "options": {}
       },
-      "id": "3faa0fa9-204a-4718-8c55-02a0352b89ea",
+      "id": "35376abf-0303-4e80-9b39-9e6314808d6b",
       "name": "Google Calendar (Borrar)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
-        544,
-        96
+        256,
+        224
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
           "id": "1ZId1pCWKAmYOxUw",
           "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.paciente_email }}",
+        "subject": "Turno Confirmado en MedAPP",
+        "message": "=Hola {{ $json.body.paciente }},\n\nTu turno con el/la Dr {{ $json.body.profesional.nombre }} ({{ $json.body.profesional.especialidad }}) ha sido agendado exitosamente.\n\nFecha y hora: {{ $json.body.fecha }} a las {{ $json.body.hora }}\n\n¡Te esperamos!\n\nSaludos,\nEl equipo de MedAPP\n",
+        "options": {}
+      },
+      "id": "559d40c0-7f03-4635-b059-540334bae08f",
+      "name": "Enviar Email (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -176
+      ],
+      "webhookId": "6559a7bf-569e-40b1-8994-aa8a4bdb2c83",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pqq68kT0PeYC5IY3",
+          "name": "Gmail account"
         }
       }
     }
@@ -158,6 +181,11 @@
             "node": "Google Calendar (Crear)",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Enviar Email (Gmail)",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -180,7 +208,42 @@
         ]
       ]
     },
+    "¿Tiene email? (alta)": {
+      "main": [
+        [
+          {
+            "node": "Email: turno registrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
     "¿Es CANCELAR?": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene evento en calendario?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "¿Tiene email? (cancelación)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene evento en calendario?": {
       "main": [
         [
           {
@@ -190,19 +253,23 @@
           }
         ]
       ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "ae5078de-e9ed-46d3-b74d-ed2e83253d53",
+  "versionId": "a7d53af5-dfa7-4e34-a514-d3ed4f331186",
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
   },
   "nodeGroups": [],
-  "id": "dCLBpjhKU5G7jQJ2",
+  "id": "v5y2SqPRSuUm8ofH",
   "tags": []
 }

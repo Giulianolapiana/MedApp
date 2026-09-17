@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 
 export function useInactivityLogout(timeoutMinutes: number = 30) {
   const { session, signOut } = useAuth();
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!session) return;

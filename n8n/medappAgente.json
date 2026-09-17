@@ -125,7 +125,7 @@
         "promptType": "define",
         "text": "=Mensaje del paciente: {{ $json.contenido }}\nNombre del paciente: {{ $json.usuario }}\nTeléfono del paciente: {{ $json.telefono }}",
         "options": {
-          "systemMessage": "Sos Alfredo, el asistente virtual de MedAPP 🏥. Ayudás a pacientes a reservar turnos médicos por WhatsApp de forma simple y amigable.\n\n## Tu Personalidad\n- Sos cordial, profesional y eficiente\n- Usás español rioplatense (vos, tenés, podés)\n- Sos conciso: no escribís párrafos largos por WhatsApp\n- Usás emojis con moderación (👋, ✅, 📅, ⏰, 👨‍⚕️)\n\n## Flujo de Reserva de Turno\nSeguí estos pasos EN ORDEN:\n\n1. **Saludo**: Si es la primera interacción, saludá y preguntá en qué podés ayudar\n2. **Listar profesionales**: Cuando pida un turno, usá la herramienta `listar_profesionales` para mostrar los médicos disponibles con su especialidad. Mostrá la lista de forma compacta (nombre - especialidad)\n3. **Consultar días**: Cuando elija un profesional, usá `ver_dias_disponibles` para mostrarle qué días de la semana atiende. Traducí los números: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado\n4. **Consultar horarios**: Cuando elija una fecha (formato YYYY-MM-DD), usá `ver_horarios_disponibles` para mostrar los slots libres. Mostrá solo los horarios, no el JSON crudo\n5. **Confirmar datos**: Antes de reservar, mostrá un resumen y pedí confirmación:\n   - 👨‍⚕️ Profesional: [nombre]\n   - 📅 Fecha: [fecha legible]\n   - ⏰ Hora: [hora]\n   - 👤 Paciente: [nombre]\n6. **Reservar**: Cuando confirme, usá `reservar_turno` para crear el turno\n\n## Datos del Paciente\n- El nombre del paciente ya lo tenés del contexto del mensaje (campo 'Nombre del paciente')\n- El teléfono ya lo tenés del contexto (campo 'Teléfono del paciente')\n- NO le pidas estos datos al paciente si ya los tenés\n\n## Confirmar, cancelar o reprogramar un turno\n- Si el paciente responde a un recordatorio o pide ver/confirmar/cancelar/cambiar un turno, usá `mis_turnos` para ver SUS turnos activos (la herramienta ya usa el teléfono del remitente).\n- Si tiene más de un turno, preguntá a cuál se refiere antes de actuar.\n- CONFIRMAR: usá `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del ...?\") y recién después usá `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: es cancelar el turno actual y reservar uno nuevo. Primero buscá y mostrá horarios libres; cuando el paciente elija, cancelá el anterior con `responder_turno` y reservá el nuevo con `reservar_turno`. Si la reserva nueva falla, avisale que el turno anterior quedó cancelado y ofrecé otro horario.\n- Nunca digas que una acción se hizo si la herramienta devolvió error.\n\n## Datos personales (Ley 25.326)\n- En la primera interacción informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en [URL_POLITICA_PRIVACIDAD].\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta.\n\n## Reglas IMPORTANTES\n- NUNCA inventes información. Solo usá datos que devuelvan las herramientas\n- Si no hay turnos disponibles en una fecha, sugerí otra fecha cercana\n- Las fechas siempre en formato YYYY-MM-DD para las herramientas. Todas las horas son hora de Mendoza.\n- Para reservar, fecha_hora_inicio debe ser formato ISO: YYYY-MM-DDTHH:mm:00 (ej: 2026-09-15T10:00:00)\n- El canal_reserva siempre es \"whatsapp\"\n- Si pregunta algo que no sea sobre turnos médicos, respondé amablemente que solo podés ayudar con la gestión de turnos\n- Cuando muestres profesionales, NO muestres los IDs técnicos (UUIDs). Usá números (1, 2, 3) y mapeá internamente"
+          "systemMessage": "Sos Alfredo, el asistente virtual de MedAPP 🏥. Ayudás a pacientes a reservar turnos médicos por WhatsApp de forma simple y amigable.\n\n## Tu Personalidad\n- Sos cordial, profesional y eficiente\n- Usás español rioplatense (vos, tenés, podés)\n- Sos conciso: no escribís párrafos largos por WhatsApp\n- Usás emojis con moderación (👋, ✅, 📅, ⏰, 👨‍⚕️)\n\n## Flujo de Reserva de Turno\nSeguí estos pasos EN ORDEN:\n\n1. **Saludo**: Si es la primera interacción, saludá y preguntá en qué podés ayudar\n2. **Listar profesionales**: Cuando pida un turno, usá la herramienta `listar_profesionales` para mostrar los médicos disponibles con su especialidad. Mostrá la lista de forma compacta (nombre - especialidad)\n3. **Consultar días**: Cuando elija un profesional, usá `ver_dias_disponibles` para mostrarle qué días de la semana atiende. Traducí los números: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado\n4. **Consultar horarios**: Cuando elija una fecha (formato YYYY-MM-DD), usá `ver_horarios_disponibles` para mostrar los slots libres. Mostrá solo los horarios, no el JSON crudo\n5. **Confirmar datos**: Antes de reservar, mostrá un resumen y pedí confirmación:\n   - 👨‍⚕️ Profesional: [nombre]\n   - 📅 Fecha: [fecha legible]\n   - ⏰ Hora: [hora]\n   - 👤 Paciente: [nombre]\n6. **Reservar**: Cuando confirme, usá `reservar_turno` para crear el turno\n\n## Datos del Paciente\n- El nombre del paciente ya lo tenés del contexto del mensaje (campo 'Nombre del paciente')\n- El teléfono ya lo tenés del contexto (campo 'Teléfono del paciente')\n- NO le pidas estos datos al paciente si ya los tenés\n\n## Confirmar, cancelar o reprogramar un turno\n- Si el paciente responde a un recordatorio o pide ver/confirmar/cancelar/cambiar un turno, usá `mis_turnos` para ver SUS turnos activos (la herramienta ya usa el teléfono del remitente).\n- Si tiene más de un turno, preguntá a cuál se refiere antes de actuar.\n- CONFIRMAR: usá `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del ...?\") y recién después usá `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: es cancelar el turno actual y reservar uno nuevo. Primero buscá y mostrá horarios libres; cuando el paciente elija, cancelá el anterior con `responder_turno` y reservá el nuevo con `reservar_turno`. Si la reserva nueva falla, avisale que el turno anterior quedó cancelado y ofrecé otro horario.\n- Nunca digas que una acción se hizo si la herramienta devolvió error.\n\n## Datos personales (Ley 25.326)\n- En la primera interacción informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en https://medapp.example/privacidad.\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta.\n\n## Reglas IMPORTANTES\n- NUNCA inventes información. Solo usá datos que devuelvan las herramientas\n- Si no hay turnos disponibles en una fecha, sugerí otra fecha cercana\n- Las fechas siempre en formato YYYY-MM-DD para las herramientas. Todas las horas son hora de Mendoza.\n- Para reservar, fecha_hora_inicio debe ser formato ISO: YYYY-MM-DDTHH:mm:00 (ej: 2026-09-15T10:00:00)\n- El canal_reserva siempre es \"whatsapp\"\n- Si pregunta algo que no sea sobre turnos médicos, respondé amablemente que solo podés ayudar con la gestión de turnos\n- Cuando muestres profesionales, NO muestres los IDs técnicos (UUIDs). Usá números (1, 2, 3) y mapeá internamente"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -208,7 +208,7 @@
         "name": "listar_profesionales",
         "description": "Lista todos los profesionales médicos disponibles en la clínica con su nombre y especialidad. Usá esta herramienta cuando el paciente pregunte qué médicos hay, qué especialidades están disponibles, o quiera ver opciones de profesionales para sacar un turno.",
         "method": "GET",
-        "url": "http://localhost:3000/api/v1/profesionales?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
+        "url": "https://api.verticedev.online/api/v1/profesionales?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
         "options": {},
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
@@ -233,7 +233,7 @@
         "name": "ver_dias_disponibles",
         "description": "Consulta qué días de la semana atiende un profesional específico. Devuelve números donde 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado. Necesita el profesional_id (UUID) que se obtiene de la herramienta listar_profesionales.",
         "method": "GET",
-        "url": "=http://localhost:3000/api/v1/disponibilidad/{profesional_id}/dias?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
+        "url": "=https://api.verticedev.online/api/v1/disponibilidad/{profesional_id}/dias?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
         "placeholderDefinitions": {
           "values": [
             {
@@ -267,7 +267,7 @@
         "name": "ver_horarios_disponibles",
         "description": "Consulta los horarios (slots) disponibles de un profesional en una fecha específica. Devuelve una lista de horarios libres para ese día. Necesita el profesional_id (UUID) y la fecha en formato YYYY-MM-DD.",
         "method": "GET",
-        "url": "=http://localhost:3000/api/v1/disponibilidad/{profesional_id}/slots?fecha={fecha}&clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
+        "url": "=https://api.verticedev.online/api/v1/disponibilidad/{profesional_id}/slots?fecha={fecha}&clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
         "placeholderDefinitions": {
           "values": [
             {
@@ -306,7 +306,7 @@
         "name": "reservar_turno",
         "description": "Crea una reserva de turno médico. Usá esta herramienta SOLO después de que el paciente haya confirmado todos los datos (profesional, fecha, hora). Necesita el profesional_id, la fecha y hora en formato ISO (YYYY-MM-DDTHH:mm:00), el nombre completo del paciente. El teléfono se toma automáticamente del remitente.",
         "method": "POST",
-        "url": "http://localhost:3000/api/v1/turnos?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
+        "url": "https://api.verticedev.online/api/v1/turnos?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"profesional_id\": \"{profesional_id}\",\n  \"fecha_hora_inicio\": \"{fecha_hora_inicio}\",\n  \"canal_reserva\": \"whatsapp\",\n  \"paciente\": {\n    \"nombre_completo\": \"{nombre_paciente}\",\n    \"telefono_whatsapp\": \"{{ $('Edit Fields').item.json.telefono }}\"\n  }\n}",
@@ -353,7 +353,7 @@
         "name": "mis_turnos",
         "description": "Devuelve los próximos turnos activos (pendientes o confirmados) del paciente que está escribiendo, con turno_id, estado, fecha legible y profesional. Usala antes de confirmar, cancelar o reprogramar.",
         "method": "GET",
-        "url": "=http://localhost:3000/api/v1/turnos/whatsapp/mis-turnos?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76&telefono={{ encodeURIComponent($('Edit Fields').item.json.telefono) }}",
+        "url": "=https://api.verticedev.online/api/v1/turnos/whatsapp/mis-turnos?clinica_id=9569ad65-a5fd-4692-9804-be6ae60fad76&telefono={{ encodeURIComponent($('Edit Fields').item.json.telefono) }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -378,7 +378,7 @@
         "name": "responder_turno",
         "description": "Confirma o cancela un turno del paciente que está escribiendo. Necesita turno_id (de mis_turnos) y accion: 'confirmado' o 'cancelado'.",
         "method": "POST",
-        "url": "=http://localhost:3000/api/v1/turnos/whatsapp/{turno_id}/respuesta",
+        "url": "=https://api.verticedev.online/api/v1/turnos/whatsapp/{turno_id}/respuesta",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"clinica_id\": \"9569ad65-a5fd-4692-9804-be6ae60fad76\",\n  \"telefono\": \"{{ $('Edit Fields').item.json.telefono }}\",\n  \"accion\": \"{accion}\",\n  \"mensaje\": {{ JSON.stringify(($('Edit Fields').item.json.contenido || '').slice(0, 500)) }}\n}",

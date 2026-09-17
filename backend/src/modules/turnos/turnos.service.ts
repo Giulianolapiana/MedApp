@@ -298,11 +298,13 @@ export class TurnosService {
         google_event_id: turno.google_event_id,
         telefono: pac?.telefono_whatsapp || 'No especificado',
         paciente_email: pac?.email || null,
+        cuando: formatoParaPaciente(turno.fecha_hora_inicio),
         motivo,
         profesional: {
           nombre: prof?.nombre || 'Profesional',
           especialidad: prof?.especialidad || 'Especialidad',
         },
+        // Instante UTC: NO usarlo en textos al paciente; usar `cuando`, `fecha` y `hora`
         record: {
           fecha_hora_inicio: turno.fecha_hora_inicio,
         }

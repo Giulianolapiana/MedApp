@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Edit2, Loader2, UserRound } from "lucide-react";
-import { useProfesionales, type Profesional, type ProfesionalInsert } from "../hooks/useProfesionales";
+import { useProfesionales, type Profesional } from "../hooks/useProfesionales";
 import { useEspecialidades } from "../hooks/useEspecialidades";
 import type { EspecialidadRow } from "../../../types/database.types";
 

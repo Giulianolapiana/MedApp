@@ -1,3 +1,5 @@
+// Tipos laxos: los módulos se importan de forma diferida en beforeAll.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Pruebas de integración contra PostgreSQL real (K-07, K-06, A-01, A-05, A-10).
  * Se ejecutan solo con INTEGRACION=1 y una base de PRUEBA con la migración aplicada:
@@ -7,12 +9,9 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 const activo = process.env.INTEGRACION === '1';
 
-describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', async () => {
-  const { db } = await import('../core/database.js');
-  const schema = await import('../db/schema.js');
-  const { turnosService } = await import('../modules/turnos/turnos.service.js');
-  const { disponibilidadService } = await import('../modules/disponibilidad/disponibilidad.service.js');
-  const { sql } = await import('drizzle-orm');
+describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
+  // Importaciones diferidas: sin INTEGRACION=1 no se carga la configuración de la base
+  let db: any, schema: any, turnosService: any, disponibilidadService: any, sql: any;
 
   let clinicaId = '';
   let profesionalId = '';
@@ -23,6 +22,11 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', async () => {
   const paciente = (n: number) => ({ nombre_completo: `Paciente ${n}`, telefono_whatsapp: `+54926100000${String(n).padStart(2, '0')}` });
 
   beforeAll(async () => {
+    ({ db } = await import('../core/database.js'));
+    schema = await import('../db/schema.js');
+    ({ turnosService } = await import('../modules/turnos/turnos.service.js'));
+    ({ disponibilidadService } = await import('../modules/disponibilidad/disponibilidad.service.js'));
+    ({ sql } = await import('drizzle-orm'));
     await db.execute(sql`ALTER TABLE historial_turnos DISABLE TRIGGER trg_historial_inmutable`);
     await db.execute(sql`TRUNCATE log_comunicacion, historial_turnos, turnos, disponibilidad, pacientes, profesionales, especialidades, usuarios_administrativos, backups_auditoria, clinicas CASCADE`);
     await db.execute(sql`ALTER TABLE historial_turnos ENABLE TRIGGER trg_historial_inmutable`);
@@ -48,15 +52,15 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', async () => {
     const [t] = await db.select().from(schema.turnos);
     expect(new Date(t.fecha_hora_inicio.replace(' ', 'T').replace(/\+00$/, 'Z')).toISOString()).toBe(`${fecha}T13:00:00.000Z`);
     const slots = await disponibilidadService.generarSlots(profesionalId, clinicaId, fecha);
-    expect(slots.find(s => s.hora === '10:00')?.disponible).toBe(false);
-    expect(slots.find(s => s.hora === '10:30')?.disponible).toBe(true);
+    expect(slots.find((s: any) => s.hora === '10:00')?.disponible).toBe(false);
+    expect(slots.find((s: any) => s.hora === '10:30')?.disponible).toBe(true);
   });
 
   it('A-04: una reserva pública no sobrescribe el nombre de un paciente existente', async () => {
     const tel = paciente(99).telefono_whatsapp;
     await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:00:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: { nombre_completo: 'Nombre Original', telefono_whatsapp: tel } }, clinicaId);
     await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: { nombre_completo: 'Intruso', telefono_whatsapp: tel, email: 'x@x.com' } }, clinicaId);
-    const p = await db.query.pacientes.findFirst({ where: (t, { eq }) => eq(t.telefono_whatsapp, tel) });
+    const p = await db.query.pacientes.findFirst({ where: (t: any, { eq }: any) => eq(t.telefono_whatsapp, tel) });
     expect(p?.nombre_completo).toBe('Nombre Original');
   });
 
@@ -66,14 +70,14 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', async () => {
     await expect(turnosService.responderDesdeWhatsapp(clinicaId, propio.turno_id, '+5492619999999', 'confirmado')).rejects.toMatchObject({ statusCode: 404 });
     const r = await turnosService.responderDesdeWhatsapp(clinicaId, propio.turno_id, tel, 'confirmado', 'Sí, confirmo');
     expect(r.estado).toBe('confirmado');
-    const logs = await db.query.logComunicacion.findMany({ where: (l, { eq }) => eq(l.turno_id, propio.turno_id) });
-    expect(logs.map(l => l.tipo)).toContain('confirmacion');
+    const logs = await db.query.logComunicacion.findMany({ where: (l: any, { eq }: any) => eq(l.turno_id, propio.turno_id) });
+    expect(logs.map((l: any) => l.tipo)).toContain('confirmacion');
   });
 
   it('K-04: cancelar libera el horario y permite reprogramar', async () => {
     const tel = paciente(99).telefono_whatsapp;
     const turnos = await turnosService.proximosDelPaciente(clinicaId, tel);
-    const t11 = turnos.find(t => t.cuando.includes('11:00'))!;
+    const t11 = turnos.find((t: any) => t.cuando.includes('11:00'))!;
     await turnosService.responderDesdeWhatsapp(clinicaId, t11.turno_id, tel, 'cancelado', 'No puedo ir');
     const nuevo = await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, canal_reserva: 'whatsapp', paciente: paciente(50) }, clinicaId);
     expect(nuevo.estado).toBe('pendiente');
@@ -83,14 +87,15 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', async () => {
     await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:30:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: { nombre_completo: 'Ana Web', telefono_whatsapp: '2614123456' } }, clinicaId);
     const turnos = await turnosService.proximosDelPaciente(clinicaId, '+5492614123456');
     expect(turnos).toHaveLength(1);
-    const p = await db.query.pacientes.findFirst({ where: (t, { eq }) => eq(t.telefono_whatsapp, '+5492614123456') });
+    const p = await db.query.pacientes.findFirst({ where: (t: any, { eq }: any) => eq(t.telefono_whatsapp, '+5492614123456') });
     expect(p?.consentimiento_en).toBeTruthy();
     await expect(turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:30:00`, canal_reserva: 'web', paciente: { nombre_completo: 'Sin Consentimiento', telefono_whatsapp: '2614000000' } }, clinicaId)).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('A-10: la base rechaza transiciones inválidas aunque se salteen la API', async () => {
     const [cancelado] = await db.select().from(schema.turnos).where(sql`estado = 'cancelado'`);
-    await expect(db.execute(sql`UPDATE turnos SET estado = 'confirmado' WHERE id = ${cancelado.id}`)).rejects.toThrow(/Transición de estado inválida/);
+    const error = await db.execute(sql`UPDATE turnos SET estado = 'confirmado' WHERE id = ${cancelado.id}`).then(() => null, (e: any) => e);
+    expect(String(error?.cause?.message ?? error?.message)).toMatch(/Transición de estado inválida/);
   });
 
   it('A-05: el recordatorio de un turno se registra una sola vez', async () => {
@@ -100,7 +105,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', async () => {
     expect((await turnosService.registrarRecordatorioEnviado(id)).registrado).toBe(true);
     expect((await turnosService.registrarRecordatorioEnviado(id)).duplicado).toBe(true);
     const otraVez = await turnosService.obtenerTurnosParaRecordatorio(fecha);
-    expect(otraVez.find(t => t.turno_id === id)).toBeUndefined();
+    expect(otraVez.find((t: any) => t.turno_id === id)).toBeUndefined();
     expect(pendientes[0].cuando).toMatch(/\d{2}:\d{2} hs/);
   });
 });
