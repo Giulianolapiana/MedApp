@@ -69,6 +69,7 @@ jobs:
           npx drizzle-kit push --force
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-16_ronda1_integridad.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-17_ronda2_respaldos.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-18_ronda3_endurecimiento.sql
       - name: Pruebas de integración
         run: cd backend && pnpm test
 

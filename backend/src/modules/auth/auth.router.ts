@@ -38,8 +38,7 @@ auth.get('/me', authMiddleware, async (c) => {
   return c.json({ user });
 });
 
-// Endpoint de registro (Para cumplir con la especificación Food Store)
-// En producción, los usuarios administrativos son creados por un superadmin.
+// Registro público deshabilitado: las cuentas del personal las crea un administrador.
 auth.post('/registro', async (c) => {
   return c.json({ message: 'El registro público está deshabilitado. Solo los administradores pueden crear cuentas.' }, 403);
 });

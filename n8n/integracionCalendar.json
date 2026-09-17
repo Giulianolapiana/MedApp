@@ -1,5 +1,5 @@
 {
-  "name": "MedAPP - Calendar",
+  "name": "MedAPP - Calendar y correo al paciente",
   "nodes": [
     {
       "parameters": {
@@ -58,7 +58,8 @@
           "attendees": [
             "={{ $json.body.medico_email }}"
           ],
-          "summary": "=Turno reservado por: {{ $json.body.paciente }} - Tel: {{ $json.body.telefono }}"
+          "summary": "=Turno MedApp: {{ $json.body.paciente }}",
+          "description": "=Turno {{ $json.body.turno_id }} · {{ $json.body.cuando }}"
         }
       },
       "id": "4ba3ea44-1ad0-45e9-9f24-bab455abcfb9",
@@ -74,12 +75,13 @@
           "id": "1ZId1pCWKAmYOxUw",
           "name": "Google Calendar account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"google_event_id\": \"{{ $json.id }}\"\n}",
+        "responseBody": "={{ JSON.stringify({ google_event_id: $json.id ?? null }) }}",
         "options": {}
       },
       "id": "f0a23f84-fc5c-42b1-b2f0-67510abc86cc",
@@ -90,6 +92,53 @@
         240,
         0
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$('Webhook MedAPP').item.json.body.paciente_email }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "¿tiene-email?-(alta)",
+      "name": "¿Tiene email? (alta)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook MedAPP').item.json.body.paciente_email }}",
+        "subject": "=Turno registrado · {{ $('Webhook MedAPP').item.json.body.cuando }}",
+        "emailType": "text",
+        "message": "=Hola {{ $('Webhook MedAPP').item.json.body.paciente }}:\n\nRegistramos tu turno con {{ $('Webhook MedAPP').item.json.body.profesional.nombre }} ({{ $('Webhook MedAPP').item.json.body.profesional.especialidad }}) para el {{ $('Webhook MedAPP').item.json.body.cuando }} (hora de Mendoza).\n\nEl día anterior te enviaremos un recordatorio por WhatsApp. Respondiendo ese mensaje vas a poder confirmar el turno, cancelarlo o pedir otro horario. Si ya sabés que no podés asistir, avisanos por WhatsApp así liberamos el horario para otro paciente.\n\nConsultorio Médico Los Andes\nPolítica de privacidad: https://turnos.verticedev.online/privacidad\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "mail-alta",
+      "name": "Email: turno registrado",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -176
+      ],
+      "webhookId": "6559a7bf-569e-40b1-8994-aa8a4bdb2c83",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pqq68kT0PeYC5IY3",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -113,6 +162,26 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.body.google_event_id }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "¿tiene-evento-en-calendario?",
+      "name": "¿Tiene evento en calendario?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        240,
+        240
+      ]
+    },
+    {
+      "parameters": {
         "operation": "delete",
         "calendar": {
           "__rl": true,
@@ -127,30 +196,69 @@
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
-        256,
-        224
+        480,
+        200
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
           "id": "1ZId1pCWKAmYOxUw",
           "name": "Google Calendar account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.body.paciente_email }}",
-        "subject": "Turno Confirmado en MedAPP",
-        "message": "=Hola {{ $json.body.paciente }},\n\nTu turno con el/la Dr {{ $json.body.profesional.nombre }} ({{ $json.body.profesional.especialidad }}) ha sido agendado exitosamente.\n\nFecha y hora: {{ $json.body.fecha }} a las {{ $json.body.hora }}\n\n¡Te esperamos!\n\nSaludos,\nEl equipo de MedAPP\n",
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true }) }}",
         "options": {}
       },
-      "id": "559d40c0-7f03-4635-b059-540334bae08f",
-      "name": "Enviar Email (Gmail)",
+      "id": "resp-canc",
+      "name": "Responder OK (cancelación)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        720,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$('Webhook MedAPP').item.json.body.paciente_email }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "¿tiene-email?-(cancelación)",
+      "name": "¿Tiene email? (cancelación)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        480,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook MedAPP').item.json.body.paciente_email }}",
+        "subject": "=Turno cancelado · {{ $('Webhook MedAPP').item.json.body.cuando }}",
+        "emailType": "text",
+        "message": "=Hola {{ $('Webhook MedAPP').item.json.body.paciente }}:\n\nTu turno con {{ $('Webhook MedAPP').item.json.body.profesional.nombre }} del {{ $('Webhook MedAPP').item.json.body.cuando }} quedó cancelado.\n\nSi querés reservar otro horario, escribinos por WhatsApp o ingresá a https://turnos.verticedev.online.\n\nConsultorio Médico Los Andes\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "mail-canc",
+      "name": "Email: turno cancelado",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
       "position": [
-        0,
-        -176
+        720,
+        400
       ],
       "webhookId": "6559a7bf-569e-40b1-8994-aa8a4bdb2c83",
       "credentials": {
@@ -158,10 +266,25 @@
           "id": "pqq68kT0PeYC5IY3",
           "name": "Gmail account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true }) }}",
+        "options": {}
+      },
+      "id": "resp-ok",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        520
+      ]
     }
   ],
-  "pinData": {},
   "connections": {
     "Webhook MedAPP": {
       "main": [
@@ -183,7 +306,7 @@
             "index": 0
           },
           {
-            "node": "Enviar Email (Gmail)",
+            "node": "¿Tiene email? (alta)",
             "type": "main",
             "index": 0
           }
@@ -251,25 +374,43 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Responder OK (cancelación)",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
-    "Respond to Webhook": {
+    "Google Calendar (Borrar)": {
       "main": [
+        [
+          {
+            "node": "Responder OK (cancelación)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene email? (cancelación)": {
+      "main": [
+        [
+          {
+            "node": "Email: turno cancelado",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     }
   },
-  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "a7d53af5-dfa7-4e34-a514-d3ed4f331186",
-  "meta": {
-    "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
-  },
-  "nodeGroups": [],
-  "id": "v5y2SqPRSuUm8ofH",
-  "tags": []
+  "active": false
 }

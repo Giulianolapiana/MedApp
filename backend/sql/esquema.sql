@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict gFHgbRhygCOBtFBY3EUmHjQAGJNYaIiCrRU30C7eLnemqwuiWnUhOWmOk6KCJh4
+\restrict gXeUOBTWt7TnkKchM6h1KgUn5vF9Uft6ezNwYz30c7syAUdvXK2IIsijKT1aGlT
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.11
@@ -206,6 +206,13 @@ CREATE TABLE public.backups_auditoria (
 
 
 --
+-- Name: TABLE backups_auditoria; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.backups_auditoria IS 'Registro de respaldos: respaldo_bd (pg_dump en VPS) y tablero_agenda (Google Sheets).';
+
+
+--
 -- Name: clinicas; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -262,6 +269,13 @@ CREATE TABLE public.historial_turnos (
 
 
 --
+-- Name: TABLE historial_turnos; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.historial_turnos IS 'Bitácora append-only de transiciones de estado (trigger impide UPDATE/DELETE).';
+
+
+--
 -- Name: log_comunicacion; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -276,6 +290,13 @@ CREATE TABLE public.log_comunicacion (
     mensaje_externo_id text,
     detalle text
 );
+
+
+--
+-- Name: TABLE log_comunicacion; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.log_comunicacion IS 'Mensajes enviados y respuestas del paciente; índice único impide recordatorios duplicados.';
 
 
 --
@@ -294,6 +315,20 @@ CREATE TABLE public.pacientes (
     consentimiento_en timestamp with time zone,
     consentimiento_canal text
 );
+
+
+--
+-- Name: COLUMN pacientes.telefono_whatsapp; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pacientes.telefono_whatsapp IS 'Formato E.164 (+549...), normalizado por la API.';
+
+
+--
+-- Name: COLUMN pacientes.consentimiento_en; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pacientes.consentimiento_en IS 'Momento en que el paciente aceptó la política de privacidad (Ley 25.326).';
 
 
 --
@@ -329,6 +364,13 @@ CREATE TABLE public.turnos (
     creado_en timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     CONSTRAINT turnos_fin_posterior_chk CHECK ((fecha_hora_fin > fecha_hora_inicio))
 );
+
+
+--
+-- Name: TABLE turnos; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.turnos IS 'Turnos. Invariantes: sin solapamiento por profesional (EXCLUDE), transiciones validadas por trigger, fin > inicio.';
 
 
 --
@@ -479,13 +521,6 @@ CREATE INDEX idx_disponibilidad_profesional ON public.disponibilidad USING btree
 
 
 --
--- Name: idx_pacientes_clinica_tel; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_pacientes_clinica_tel ON public.pacientes USING btree (clinica_id, telefono_whatsapp);
-
-
---
 -- Name: idx_turnos_clinica_fecha; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -514,20 +549,6 @@ CREATE UNIQUE INDEX log_comunicacion_un_recordatorio_por_turno ON public.log_com
 
 
 --
--- Name: pacientes_clinica_telefono_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX pacientes_clinica_telefono_idx ON public.pacientes USING btree (clinica_id, telefono_whatsapp);
-
-
---
--- Name: turnos_profesional_inicio_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX turnos_profesional_inicio_idx ON public.turnos USING btree (profesional_id, fecha_hora_inicio);
-
-
---
 -- Name: turnos on_turno_change; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -549,27 +570,11 @@ CREATE TRIGGER trg_validar_transicion_turno BEFORE UPDATE OF estado ON public.tu
 
 
 --
--- Name: backups_auditoria backups_auditoria_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.backups_auditoria
-    ADD CONSTRAINT backups_auditoria_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
-
-
---
 -- Name: backups_auditoria backups_auditoria_clinica_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.backups_auditoria
     ADD CONSTRAINT backups_auditoria_clinica_id_fkey FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id) ON DELETE CASCADE;
-
-
---
--- Name: disponibilidad disponibilidad_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.disponibilidad
-    ADD CONSTRAINT disponibilidad_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
 
 
 --
@@ -589,22 +594,6 @@ ALTER TABLE ONLY public.disponibilidad
 
 
 --
--- Name: disponibilidad disponibilidad_profesional_id_profesionales_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.disponibilidad
-    ADD CONSTRAINT disponibilidad_profesional_id_profesionales_id_fk FOREIGN KEY (profesional_id) REFERENCES public.profesionales(id);
-
-
---
--- Name: especialidades especialidades_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.especialidades
-    ADD CONSTRAINT especialidades_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
-
-
---
 -- Name: especialidades especialidades_clinica_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -618,22 +607,6 @@ ALTER TABLE ONLY public.especialidades
 
 ALTER TABLE ONLY public.historial_turnos
     ADD CONSTRAINT historial_turnos_turno_id_fkey FOREIGN KEY (turno_id) REFERENCES public.turnos(id);
-
-
---
--- Name: historial_turnos historial_turnos_turno_id_turnos_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.historial_turnos
-    ADD CONSTRAINT historial_turnos_turno_id_turnos_id_fk FOREIGN KEY (turno_id) REFERENCES public.turnos(id);
-
-
---
--- Name: log_comunicacion log_comunicacion_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.log_comunicacion
-    ADD CONSTRAINT log_comunicacion_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
 
 
 --
@@ -653,35 +626,11 @@ ALTER TABLE ONLY public.log_comunicacion
 
 
 --
--- Name: log_comunicacion log_comunicacion_turno_id_turnos_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.log_comunicacion
-    ADD CONSTRAINT log_comunicacion_turno_id_turnos_id_fk FOREIGN KEY (turno_id) REFERENCES public.turnos(id);
-
-
---
--- Name: pacientes pacientes_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pacientes
-    ADD CONSTRAINT pacientes_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
-
-
---
 -- Name: pacientes pacientes_clinica_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.pacientes
     ADD CONSTRAINT pacientes_clinica_id_fkey FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id) ON DELETE CASCADE;
-
-
---
--- Name: profesionales profesionales_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.profesionales
-    ADD CONSTRAINT profesionales_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
 
 
 --
@@ -698,22 +647,6 @@ ALTER TABLE ONLY public.profesionales
 
 ALTER TABLE ONLY public.profesionales
     ADD CONSTRAINT profesionales_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios_administrativos(id) ON DELETE SET NULL;
-
-
---
--- Name: profesionales profesionales_usuario_id_usuarios_administrativos_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.profesionales
-    ADD CONSTRAINT profesionales_usuario_id_usuarios_administrativos_id_fk FOREIGN KEY (usuario_id) REFERENCES public.usuarios_administrativos(id);
-
-
---
--- Name: turnos turnos_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.turnos
-    ADD CONSTRAINT turnos_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
 
 
 --
@@ -741,22 +674,6 @@ ALTER TABLE ONLY public.turnos
 
 
 --
--- Name: turnos turnos_profesional_id_profesionales_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.turnos
-    ADD CONSTRAINT turnos_profesional_id_profesionales_id_fk FOREIGN KEY (profesional_id) REFERENCES public.profesionales(id);
-
-
---
--- Name: usuarios_administrativos usuarios_administrativos_clinica_id_clinicas_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.usuarios_administrativos
-    ADD CONSTRAINT usuarios_administrativos_clinica_id_clinicas_id_fk FOREIGN KEY (clinica_id) REFERENCES public.clinicas(id);
-
-
---
 -- Name: usuarios_administrativos usuarios_administrativos_clinica_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -773,31 +690,10 @@ ALTER TABLE ONLY public.usuarios_administrativos
 
 
 --
--- Name: turnos Admin y Recepcion pueden actualizar turnos; Type: POLICY; Schema: public; Owner: -
+-- Name: backups_auditoria Admin ve backups de su clinica; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admin y Recepcion pueden actualizar turnos" ON public.turnos FOR UPDATE TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = ANY (ARRAY['ADMINISTRADOR'::public.rol_usuario, 'RECEPCION'::public.rol_usuario])))) WITH CHECK ((clinica_id = public.get_auth_clinica_id()));
-
-
---
--- Name: turnos Admin y Recepcion pueden insertar turnos; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Admin y Recepcion pueden insertar turnos" ON public.turnos FOR INSERT TO authenticated WITH CHECK (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = ANY (ARRAY['ADMINISTRADOR'::public.rol_usuario, 'RECEPCION'::public.rol_usuario]))));
-
-
---
--- Name: pacientes Crear o actualizar pacientes en su clinica; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Crear o actualizar pacientes en su clinica" ON public.pacientes FOR INSERT TO authenticated WITH CHECK ((clinica_id = public.get_auth_clinica_id()));
-
-
---
--- Name: log_comunicacion Insertar logs en la clinica; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Insertar logs en la clinica" ON public.log_comunicacion FOR INSERT TO authenticated WITH CHECK ((clinica_id = public.get_auth_clinica_id()));
+CREATE POLICY "Admin ve backups de su clinica" ON public.backups_auditoria FOR SELECT TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = 'ADMINISTRADOR'::public.rol_usuario)));
 
 
 --
@@ -805,41 +701,6 @@ CREATE POLICY "Insertar logs en la clinica" ON public.log_comunicacion FOR INSER
 --
 
 CREATE POLICY "Lectura de turnos segun rol" ON public.turnos FOR SELECT TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND ((public.get_auth_rol() = ANY (ARRAY['ADMINISTRADOR'::public.rol_usuario, 'RECEPCION'::public.rol_usuario])) OR ((public.get_auth_rol() = 'PROFESIONAL'::public.rol_usuario) AND (profesional_id = public.get_auth_profesional_id())))));
-
-
---
--- Name: pacientes Modificar pacientes en su clinica; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Modificar pacientes en su clinica" ON public.pacientes FOR UPDATE TO authenticated USING ((clinica_id = public.get_auth_clinica_id())) WITH CHECK ((clinica_id = public.get_auth_clinica_id()));
-
-
---
--- Name: disponibilidad Solo admin gestiona disponibilidad; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Solo admin gestiona disponibilidad" ON public.disponibilidad TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = 'ADMINISTRADOR'::public.rol_usuario)));
-
-
---
--- Name: profesionales Solo admin gestiona profesionales; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Solo admin gestiona profesionales" ON public.profesionales TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = 'ADMINISTRADOR'::public.rol_usuario)));
-
-
---
--- Name: backups_auditoria Solo admin ve y gestiona backups; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Solo admin ve y gestiona backups" ON public.backups_auditoria TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = 'ADMINISTRADOR'::public.rol_usuario)));
-
-
---
--- Name: usuarios_administrativos Solo administradores gestionan usuarios; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Solo administradores gestionan usuarios" ON public.usuarios_administrativos TO authenticated USING (((clinica_id = public.get_auth_clinica_id()) AND (public.get_auth_rol() = 'ADMINISTRADOR'::public.rol_usuario)));
 
 
 --
@@ -864,6 +725,13 @@ CREATE POLICY "Ver disponibilidad de la clinica" ON public.disponibilidad FOR SE
 
 
 --
+-- Name: especialidades Ver especialidades de la clinica; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Ver especialidades de la clinica" ON public.especialidades FOR SELECT TO authenticated USING ((clinica_id = public.get_auth_clinica_id()));
+
+
+--
 -- Name: log_comunicacion Ver logs de la clinica; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -882,13 +750,6 @@ CREATE POLICY "Ver pacientes de la misma clinica" ON public.pacientes FOR SELECT
 --
 
 CREATE POLICY "Ver profesionales de la clinica" ON public.profesionales FOR SELECT TO authenticated USING ((clinica_id = public.get_auth_clinica_id()));
-
-
---
--- Name: especialidades admin: gestionar especialidades de su clinica; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "admin: gestionar especialidades de su clinica" ON public.especialidades TO authenticated USING ((clinica_id = public.get_auth_clinica_id())) WITH CHECK ((clinica_id = public.get_auth_clinica_id()));
 
 
 --
@@ -934,48 +795,6 @@ ALTER TABLE public.log_comunicacion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pacientes ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: pacientes portal: insertar o actualizar paciente; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "portal: insertar o actualizar paciente" ON public.pacientes FOR INSERT TO anon WITH CHECK (true);
-
-
---
--- Name: turnos portal: insertar turno vía web; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "portal: insertar turno vía web" ON public.turnos FOR INSERT TO anon WITH CHECK (((canal_reserva = 'web'::public.canal_reserva) AND (estado = 'pendiente'::public.estado_turno)));
-
-
---
--- Name: disponibilidad portal: leer disponibilidad habilitada; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "portal: leer disponibilidad habilitada" ON public.disponibilidad FOR SELECT TO anon USING ((habilitado = true));
-
-
---
--- Name: especialidades portal: leer especialidades; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "portal: leer especialidades" ON public.especialidades FOR SELECT TO anon USING (true);
-
-
---
--- Name: turnos portal: leer fechas de turnos ocupados; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "portal: leer fechas de turnos ocupados" ON public.turnos FOR SELECT TO anon USING ((estado = ANY (ARRAY['pendiente'::public.estado_turno, 'confirmado'::public.estado_turno])));
-
-
---
--- Name: profesionales portal: leer profesionales activos; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "portal: leer profesionales activos" ON public.profesionales FOR SELECT TO anon USING ((activo = true));
-
-
---
 -- Name: profesionales; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -997,5 +816,5 @@ ALTER TABLE public.usuarios_administrativos ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gFHgbRhygCOBtFBY3EUmHjQAGJNYaIiCrRU30C7eLnemqwuiWnUhOWmOk6KCJh4
+\unrestrict gXeUOBTWt7TnkKchM6h1KgUn5vF9Uft6ezNwYz30c7syAUdvXK2IIsijKT1aGlT
 
