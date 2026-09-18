@@ -148,7 +148,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": {{ JSON.stringify($json.paciente_nombre) }},\n  \"phone_number\": \"+\" + {{ JSON.stringify($json.paciente_telefono.replace('+', '').replace(/\\s+/g, '')) }}\n}",
+        "jsonBody": "={\n  \"name\": {{ JSON.stringify($json.paciente_nombre) }},\n  \"phone_number\": {{ JSON.stringify('+' + $json.paciente_telefono.replace('+', '').replace(/\\\\s+/g, '')) }}\n}",
         "options": {
           "response": {
             "response": {
