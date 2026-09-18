@@ -51,7 +51,7 @@ export function DashboardPage() {
         <KpiCard label="No-show hoy" value={noShowsHoy} isAlert={noShowsHoy > 0} />
         <KpiCard label="Asistencia" value={`${stats.tasaAsistencia ?? 0}%`} />
         <KpiCard label="Cancelación" value={`${stats.tasaCancelacion ?? 0}%`} />
-        <KpiCard label="Ocupación (Est.)" value={`${ocupacion}%`} />
+        <KpiCard label="Ocupación" value={`${ocupacion}%`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

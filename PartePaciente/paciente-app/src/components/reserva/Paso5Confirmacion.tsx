@@ -17,7 +17,7 @@ export function Paso5Confirmacion() {
         ¡Turno reservado correctamente!
       </h2>
       <p className="text-text-secondary mb-8 max-w-md">
-        Ya registramos tu turno. En unos minutos vas a recibir la confirmación por <strong>Email</strong> y <strong>WhatsApp</strong> con todos los detalles.
+        Ya registramos tu turno. Te enviamos los detalles por <strong>Email</strong> y, el día anterior, vas a recibir un recordatorio por <strong>WhatsApp</strong> para confirmarlo, cancelarlo o cambiarlo.
       </p>
 
       <div className="w-full max-w-md bg-bg-base border border-border-soft rounded-2xl p-6 text-left mb-8">
