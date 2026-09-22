@@ -125,7 +125,7 @@ export function TimeGrid({ currentDate, turnos, onTurnoClick }: TimeGridProps & 
               </span>
             </div>
             <span className="text-[9px] text-white/70 truncate leading-none mt-1">
-              Dr. {turno.profesionales?.nombre}
+              {turno.profesionales?.nombre}
             </span>
           </div>
         ))}
