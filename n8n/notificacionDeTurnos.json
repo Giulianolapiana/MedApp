@@ -159,7 +159,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const prev = $input.first().json;\nconst contactId = prev.payload ? prev.payload.contact.id : (prev.id || 1);\nreturn [{ json: { contact_id: contactId } }];"
+        "jsCode": "return $input.all().map((item, index) => {\n  const prev = item.json;\n  const contactId = prev.payload ? prev.payload.contact.id : (prev.id || 1);\n  return { \n    json: { contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
       },
       "id": "code-extraer-contact-id",
       "name": "Extraer Contact ID",
@@ -195,7 +195,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.first().json.payload || [];\nconst inboxId = parseInt($('Variables Chatwoot').item.json.inboxId);\nconst contactId = $('Extraer Contact ID').item.json.contact_id;\n\n// Buscar conversación abierta o pendiente en el inbox correcto\nconst existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\nif (existing) {\n  return [{ json: { id: existing.id, reused: true, contact_id: contactId } }];\n}\n\nreturn [{ json: { id: null, reused: false, contact_id: contactId } }];"
+        "jsCode": "return $input.all().map((item, index) => {\n  const payload = item.json.payload || [];\n  const inboxId = parseInt($('Variables Chatwoot').itemMatching(index).json.inboxId);\n  const contactId = $('Extraer Contact ID').itemMatching(index).json.contact_id;\n\n  const existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\n  if (existing) {\n    return { \n      json: { id: existing.id, reused: true, contact_id: contactId },\n      pairedItem: { item: index }\n    };\n  }\n  return { \n    json: { id: null, reused: false, contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
       },
       "id": "code-resolver-conversacion",
       "name": "Resolver Conversación",
