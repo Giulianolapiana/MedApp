@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict DprfKaJmNdym14jUzDCXxTr0Jeovb8807FTIMf9oJ2JfvgYdtE5jXlYef3ZFE6H
+\restrict bS9J2KeOzuUIKlPbV3FMfHjSi2Q8clN6IR57ekSoExEc0AVdrqQuIrKq70vOgCa
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.11
@@ -254,7 +254,9 @@ CREATE TABLE public.log_comunicacion (
     "timestamp" timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     respuesta_paciente text,
     mensaje_externo_id text,
-    detalle text
+    detalle text,
+    estado_entrega text DEFAULT 'enviado'::text NOT NULL,
+    CONSTRAINT log_estado_entrega_chk CHECK ((estado_entrega = ANY (ARRAY['enviado'::text, 'entregado'::text, 'leido'::text, 'fallido'::text])))
 );
 
 
@@ -508,10 +510,17 @@ CREATE INDEX idx_turnos_profesional_fecha ON public.turnos USING btree (profesio
 
 
 --
+-- Name: log_comunicacion_mensaje_externo_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX log_comunicacion_mensaje_externo_idx ON public.log_comunicacion USING btree (mensaje_externo_id);
+
+
+--
 -- Name: log_comunicacion_un_recordatorio_por_turno; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX log_comunicacion_un_recordatorio_por_turno ON public.log_comunicacion USING btree (turno_id) WHERE (tipo = 'recordatorio'::public.tipo_comunicacion);
+CREATE UNIQUE INDEX log_comunicacion_un_recordatorio_por_turno ON public.log_comunicacion USING btree (turno_id) WHERE ((tipo = 'recordatorio'::public.tipo_comunicacion) AND (estado_entrega <> 'fallido'::text));
 
 
 --
@@ -775,5 +784,5 @@ ALTER TABLE public.usuarios_administrativos ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DprfKaJmNdym14jUzDCXxTr0Jeovb8807FTIMf9oJ2JfvgYdtE5jXlYef3ZFE6H
+\unrestrict bS9J2KeOzuUIKlPbV3FMfHjSi2Q8clN6IR57ekSoExEc0AVdrqQuIrKq70vOgCa
 
