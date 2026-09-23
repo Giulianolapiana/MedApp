@@ -16,10 +16,7 @@
       "name": "Todos los días a las 09:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [
-        -700,
-        0
-      ]
+      "position": [-700, 0]
     },
     {
       "parameters": {
@@ -33,10 +30,7 @@
       "name": "Obtener Turnos de Mañana (MedAPP)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        -480,
-        0
-      ],
+      "position": [-480, 0],
       "credentials": {
         "httpHeaderAuth": {
           "id": "REEMPLAZAR_AL_IMPORTAR",
@@ -52,10 +46,7 @@
       "name": "Separar cada Turno",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -260,
-        0
-      ]
+      "position": [-260, 0]
     },
     {
       "parameters": {
@@ -135,10 +126,7 @@
       "name": "Variables Chatwoot",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        -40,
-        0
-      ]
+      "position": [-40, 0]
     },
     {
       "parameters": {
@@ -161,10 +149,7 @@
       "name": "Crear o Buscar Contacto",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        180,
-        0
-      ],
+      "position": [180, 0],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -174,13 +159,76 @@
     },
     {
       "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst contactId = prev.payload ? prev.payload.contact.id : (prev.id || 1);\nreturn [{ json: { contact_id: contactId } }];"
+      },
+      "id": "code-extraer-contact-id",
+      "name": "Extraer Contact ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/contacts/{{ $json.contact_id }}/conversations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-buscar-conversaciones",
+      "name": "Buscar Conversaciones",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json.payload || [];\nconst inboxId = parseInt($('Variables Chatwoot').item.json.inboxId);\nconst contactId = $('Extraer Contact ID').item.json.contact_id;\n\n// Buscar conversación abierta o pendiente en el inbox correcto\nconst existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\nif (existing) {\n  return [{ json: { id: existing.id, reused: true, contact_id: contactId } }];\n}\n\nreturn [{ json: { id: null, reused: false, contact_id: contactId } }];"
+      },
+      "id": "code-resolver-conversacion",
+      "name": "Resolver Conversación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.reused }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-conv-existente",
+      "name": "¿Conv Existente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1060, 0]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/conversations",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"contact_id\": {{ $json.payload ? $json.payload.contact.id : ($json.id || 1) }},\n  \"inbox_id\": {{ $('Variables Chatwoot').item.json.inboxId }}\n}",
+        "jsonBody": "={\n  \"contact_id\": {{ $json.contact_id }},\n  \"inbox_id\": {{ $('Variables Chatwoot').item.json.inboxId }}\n}",
         "options": {
           "response": {
             "response": {
@@ -193,10 +241,7 @@
       "name": "Crear Conversación",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        400,
-        0
-      ],
+      "position": [1280, 200],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -219,10 +264,7 @@
       "name": "Enviar WhatsApp Recordatorio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        620,
-        0
-      ],
+      "position": [1500, 0],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -245,10 +287,7 @@
       "name": "Registrar Envío en MedApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        840,
-        0
-      ],
+      "position": [1720, 0],
       "credentials": {
         "httpHeaderAuth": {
           "id": "REEMPLAZAR_AL_IMPORTAR",
@@ -305,6 +344,57 @@
     },
     "Crear o Buscar Contacto": {
       "main": [
+        [
+          {
+            "node": "Extraer Contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Contact ID": {
+      "main": [
+        [
+          {
+            "node": "Buscar Conversaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Conversaciones": {
+      "main": [
+        [
+          {
+            "node": "Resolver Conversación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolver Conversación": {
+      "main": [
+        [
+          {
+            "node": "¿Conv Existente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Conv Existente?": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp Recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Crear Conversación",
