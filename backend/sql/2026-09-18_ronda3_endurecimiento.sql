@@ -18,8 +18,8 @@ BEGIN;
 --    paciente, a una URL de ngrok de desarrollo. Duplica la notificación que
 --    ya hace la API después del commit.
 -- ---------------------------------------------------------------------
--- DROP TRIGGER IF EXISTS on_turno_change ON public.turnos;
--- DROP FUNCTION IF EXISTS public.notify_n8n_turno();
+DROP TRIGGER IF EXISTS on_turno_change ON public.turnos;
+DROP FUNCTION IF EXISTS public.notify_n8n_turno();
 
 -- ---------------------------------------------------------------------
 -- 2. Rol anónimo sin acceso (A-04)
