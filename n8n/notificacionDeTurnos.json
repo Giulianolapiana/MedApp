@@ -117,12 +117,6 @@
               "name": "cuando",
               "value": "={{ $json.cuando }}",
               "type": "string"
-            },
-            {
-              "id": "var-chatwoot-token",
-              "name": "chatwootToken",
-              "value": "REEMPLAZAR_CON_TU_TOKEN_CHATWOOT",
-              "type": "string"
             }
           ]
         },
@@ -136,13 +130,68 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = [];\nfor (let i = 0; i < $input.all().length; i++) {\n  const item = $input.all()[i];\n  const vars = item.json;\n  const serverUrl = vars.serverUrl;\n  const accountId = vars.accountId;\n  const phone = '+' + vars.paciente_telefono.replace('+', '').replace(/\\s+/g, '');\n  const name = vars.paciente_nombre;\n  const token = vars.chatwootToken;\n\n  // 1) Search for existing contact by phone\n  let contactId = null;\n  try {\n    const searchRes = await fetch(\n      `${serverUrl}/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(phone)}&include_contacts=true`,\n      { headers: { 'api_access_token': token } }\n    );\n    const searchData = await searchRes.json();\n    if (searchData.payload && searchData.payload.length > 0) {\n      const match = searchData.payload.find(c => c.phone_number === phone);\n      if (match) contactId = match.id;\n    }\n  } catch(e) { /* search failed, will try create */ }\n\n  // 2) If not found, create\n  if (!contactId) {\n    try {\n      const createRes = await fetch(\n        `${serverUrl}/api/v1/accounts/${accountId}/contacts`,\n        {\n          method: 'POST',\n          headers: { 'Content-Type': 'application/json', 'api_access_token': token },\n          body: JSON.stringify({ name, phone_number: phone })\n        }\n      );\n      const createData = await createRes.json();\n      if (createData.payload && createData.payload.contact) {\n        contactId = createData.payload.contact.id;\n      } else if (createData.id) {\n        contactId = createData.id;\n      } else {\n        // 422 duplicate — search again\n        const retry = await fetch(\n          `${serverUrl}/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(phone)}`,\n          { headers: { 'api_access_token': token } }\n        );\n        const retryData = await retry.json();\n        if (retryData.payload && retryData.payload.length > 0) {\n          const match = retryData.payload.find(c => c.phone_number === phone);\n          if (match) contactId = match.id;\n        }\n      }\n    } catch(e) { /* create failed */ }\n  }\n\n  results.push({\n    json: { contact_id: contactId || 0 },\n    pairedItem: { item: i }\n  });\n}\nreturn results;"
+        "method": "POST",
+        "url": "={{ $json.serverUrl }}/api/v1/accounts/{{ $json.accountId }}/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": {{ JSON.stringify($json.paciente_nombre) }},\n  \"phone_number\": {{ JSON.stringify('+' + $json.paciente_telefono.replace('+', '').replace(/\\\\s+/g, '')) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
-      "id": "code-buscar-o-crear-contacto",
-      "name": "Buscar o Crear Contacto",
+      "id": "http-crear-contacto",
+      "name": "Crear Contacto (puede fallar)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/contacts/search?q={{ encodeURIComponent('+' + $('Variables Chatwoot').item.json.paciente_telefono.replace('+', '').replace(/\\s+/g, '')) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-buscar-contacto-telefono",
+      "name": "Buscar Contacto por Teléfono",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n  const searchResults = item.json.payload || [];\n  const phone = '+' + $('Variables Chatwoot').itemMatching(index).json.paciente_telefono.replace('+', '').replace(/\\s+/g, '');\n  const match = searchResults.find(c => c.phone_number === phone);\n  return {\n    json: { contact_id: match ? match.id : 0 },\n    pairedItem: { item: index }\n  };\n});"
+      },
+      "id": "code-extraer-contact-id",
+      "name": "Extraer Contact ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [250, 0]
+      "position": [620, 0]
     },
     {
       "parameters": {
@@ -172,7 +221,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map((item, index) => {\n  const payload = item.json.payload || [];\n  const inboxId = parseInt($('Variables Chatwoot').itemMatching(index).json.inboxId);\n  const contactId = $('Buscar o Crear Contacto').itemMatching(index).json.contact_id;\n\n  const existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\n  if (existing) {\n    return { \n      json: { id: existing.id, reused: true, contact_id: contactId },\n      pairedItem: { item: index }\n    };\n  }\n  return { \n    json: { id: null, reused: false, contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
+        "jsCode": "return $input.all().map((item, index) => {\n  const payload = item.json.payload || [];\n  const inboxId = parseInt($('Variables Chatwoot').itemMatching(index).json.inboxId);\n  const contactId = $('Extraer Contact ID').itemMatching(index).json.contact_id;\n\n  const existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\n  if (existing) {\n    return { \n      json: { id: existing.id, reused: true, contact_id: contactId },\n      pairedItem: { item: index }\n    };\n  }\n  return { \n    json: { id: null, reused: false, contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
       },
       "id": "code-resolver-conversacion",
       "name": "Resolver Conversación",
@@ -312,14 +361,36 @@
       "main": [
         [
           {
-            "node": "Buscar o Crear Contacto",
+            "node": "Crear Contacto (puede fallar)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Buscar o Crear Contacto": {
+    "Crear Contacto (puede fallar)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Contacto por Teléfono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Contacto por Teléfono": {
+      "main": [
+        [
+          {
+            "node": "Extraer Contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Contact ID": {
       "main": [
         [
           {
