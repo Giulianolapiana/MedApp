@@ -159,7 +159,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map((item, index) => {\n  const prev = item.json;\n  const contactId = prev.payload ? prev.payload.contact.id : (prev.id || 1);\n  return { \n    json: { contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
+        "jsCode": "return $input.all().map((item, index) => {\n  const prev = item.json;\n  let contactId = 1;\n  if (prev.payload && prev.payload.contact) {\n    contactId = prev.payload.contact.id;\n  } else if (prev.contact && prev.contact.id) {\n    contactId = prev.contact.id;\n  } else {\n    contactId = prev.id || 1;\n  }\n  return { \n    json: { contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
       },
       "id": "code-extraer-contact-id",
       "name": "Extraer Contact ID",
