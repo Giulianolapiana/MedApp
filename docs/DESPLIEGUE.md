@@ -30,6 +30,8 @@ La API corre en el mismo VPS que n8n y en la misma región que la base de datos
    N8N_API_KEY=<openssl rand -hex 32>
    CORS_ORIGINS=https://panel.verticedev.online,https://turnos.verticedev.online
    RESERVAS_POR_HORA=20
+   RESERVAS_POR_TELEFONO_HORA=3
+   TRUSTED_PROXY_HOPS=1          # Traefik de Dokploy agrega la IP real al final de X-Forwarded-For
    ```
 4. **Domains:** `api.verticedev.online` → puerto 3000 → HTTPS (Let's Encrypt).
 5. DNS (Hostinger): registro `A` de `api` → IP del VPS.
@@ -77,7 +79,13 @@ En Supabase → Authentication → URL Configuration, agregar `https://panel.ver
 ## 4. n8n
 
 1. Crear credencial **Header Auth** "MedApp API (x-api-key)": header `x-api-key`, valor = `N8N_API_KEY`.
-2. Importar los workflows de `n8n/` y reconectar credenciales (Postgres, Google, Chatwoot, OpenAI).
+2. Importar los workflows de `n8n/` y reconectar credenciales (Google, Chatwoot, OpenAI). n8n ya no
+   necesita credencial de PostgreSQL: el tablero se obtiene de la API.
+   - `asistenteConversacional.json` (WF-03): verifica cada mensaje entrante consultando la API de
+     Chatwoot antes de actuar. En Chatwoot, el webhook debe suscribirse a `message_created` y
+     `message_updated` (este último informa el estado de entrega de los recordatorios).
+   - `notificacionDeTurnos.json` (WF-02): envía la plantilla `recordatorio_turno`. Ajustar en
+     "Variables Chatwoot" el idioma y el orden de los parámetros según la plantilla aprobada.
 3. Los workflows apuntan a `https://api.verticedev.online`. Si n8n y la API comparten la red
    `dokploy-network`, puede usarse la URL interna del servicio.
 4. En el workflow de correo, usar el campo **`cuando`** del payload (hora de Mendoza) y no
@@ -90,8 +98,12 @@ En orden, desde el SQL Editor de Supabase (con backup previo):
 2. `backend/sql/2026-09-17_ronda2_respaldos.sql`.
 3. `backend/sql/2026-09-18_ronda3_endurecimiento.sql` (elimina el webhook heredado a ngrok,
    el acceso anónimo y las escrituras directas con JWT; limpia claves foráneas duplicadas).
-4. Regenerar `backend/sql/esquema.sql` con `pg_dump --schema-only` para que el repositorio
-   refleje la base vigente.
+4. `backend/sql/2026-09-24_ronda4_entrega.sql` (estado de entrega de recordatorios; vuelve a
+   asegurar la eliminación del disparador heredado).
+5. Verificar: `SELECT tgname FROM pg_trigger WHERE tgrelid = 'public.turnos'::regclass AND NOT tgisinternal;`
+   debe devolver solo `trg_validar_transicion_turno`.
+6. Regenerar `backend/sql/esquema.sql` con `pg_dump --schema-only` y comprobar que no esté vacío.
+   La integración continua crea su base de prueba a partir de ese archivo.
 
 > No ejecutar `drizzle-kit push` contra producción: recrea claves foráneas duplicadas.
 > Los cambios de esquema se aplican con scripts SQL versionados en `backend/sql/`.

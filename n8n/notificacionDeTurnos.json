@@ -1,5 +1,5 @@
 {
-  "name": "MedAPP - Recordatorios de Turnos (Cron 24hs)",
+  "name": "MedAPP - Recordatorios de turnos",
   "nodes": [
     {
       "parameters": {
@@ -16,7 +16,10 @@
       "name": "Todos los días a las 09:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [-700, 0]
+      "position": [
+        -700,
+        0
+      ]
     },
     {
       "parameters": {
@@ -30,7 +33,10 @@
       "name": "Obtener Turnos de Mañana (MedAPP)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-480, 0],
+      "position": [
+        -480,
+        0
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "REEMPLAZAR_AL_IMPORTAR",
@@ -46,7 +52,10 @@
       "name": "Separar cada Turno",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-260, 0]
+      "position": [
+        -260,
+        0
+      ]
     },
     {
       "parameters": {
@@ -117,6 +126,18 @@
               "name": "cuando",
               "value": "={{ $json.cuando }}",
               "type": "string"
+            },
+            {
+              "id": "tpl-nombre",
+              "name": "plantilla",
+              "value": "recordatorio_turno",
+              "type": "string"
+            },
+            {
+              "id": "tpl-idioma",
+              "name": "plantilla_idioma",
+              "value": "es_AR",
+              "type": "string"
             }
           ]
         },
@@ -126,7 +147,10 @@
       "name": "Variables Chatwoot",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [-40, 0]
+      "position": [
+        -40,
+        0
+      ]
     },
     {
       "parameters": {
@@ -149,7 +173,10 @@
       "name": "Crear Contacto (puede fallar)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [180, 0],
+      "position": [
+        180,
+        0
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -175,7 +202,10 @@
       "name": "Buscar Contacto por Teléfono",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [400, 0],
+      "position": [
+        400,
+        0
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -191,7 +221,10 @@
       "name": "Extraer Contact ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [620, 0]
+      "position": [
+        620,
+        0
+      ]
     },
     {
       "parameters": {
@@ -211,7 +244,10 @@
       "name": "Buscar Conversaciones",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [620, 0],
+      "position": [
+        620,
+        0
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -227,7 +263,10 @@
       "name": "Resolver Conversación",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [840, 0]
+      "position": [
+        840,
+        0
+      ]
     },
     {
       "parameters": {
@@ -244,7 +283,10 @@
       "name": "¿Conv Existente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1060, 0]
+      "position": [
+        1060,
+        0
+      ]
     },
     {
       "parameters": {
@@ -267,7 +309,10 @@
       "name": "Crear Conversación",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1280, 200],
+      "position": [
+        1280,
+        200
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -283,14 +328,24 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  content: `Hola ${$('Variables Chatwoot').item.json.paciente_nombre} 👋 Te recordamos tu turno en MedAPP con ${$('Variables Chatwoot').item.json.profesional_nombre} (${$('Variables Chatwoot').item.json.especialidad}) el ${$('Variables Chatwoot').item.json.cuando}.\\n\\nRespondé CONFIRMAR para confirmar, CANCELAR si no podés asistir o CAMBIAR si querés otro horario.`,\n  message_type: 'outgoing',\n  private: false\n}) }}",
-        "options": {}
+        "jsonBody": "={{ JSON.stringify({\n  content: `Hola ${$('Variables Chatwoot').item.json.paciente_nombre}, te recordamos tu turno con ${$('Variables Chatwoot').item.json.profesional_nombre} (${$('Variables Chatwoot').item.json.especialidad}) el ${$('Variables Chatwoot').item.json.cuando}. Respondé a este mensaje para confirmarlo, cancelarlo o pedir otro horario.`,\n  message_type: 'outgoing',\n  private: false,\n  template_params: {\n    name: $('Variables Chatwoot').item.json.plantilla,\n    category: 'UTILITY',\n    language: $('Variables Chatwoot').item.json.plantilla_idioma,\n    processed_params: {\n      '1': $('Variables Chatwoot').item.json.paciente_nombre,\n      '2': $('Variables Chatwoot').item.json.profesional_nombre,\n      '3': $('Variables Chatwoot').item.json.especialidad,\n      '4': $('Variables Chatwoot').item.json.cuando\n    }\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": false
+            }
+          }
+        }
       },
       "id": "http-enviar-recordatorio",
       "name": "Enviar WhatsApp Recordatorio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1500, 0],
+      "position": [
+        1500,
+        0
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "xzyTaKXyidm2A0tU",
@@ -306,14 +361,63 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.id ?? '') }) }}",
+        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.id), estado: 'enviado' }) }}",
         "options": {}
       },
       "id": "http-registrar-recordatorio",
       "name": "Registrar Envío en MedApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1720, 0],
+      "position": [
+        1940,
+        -100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id && !$json.error }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-aceptado",
+      "name": "¿Chatwoot aceptó el envío?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.verticedev.online/api/v1/turnos/recordatorios/{{ $('Variables Chatwoot').item.json.turno_id }}/enviado",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ estado: 'fallido', detalle: String($json.error?.message || $json.message || 'envío rechazado').slice(0, 500) }) }}",
+        "options": {}
+      },
+      "id": "http-registrar-fallo",
+      "name": "Registrar fallo (permite reintento)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1940,
+        100
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "REEMPLAZAR_AL_IMPORTAR",
@@ -456,7 +560,25 @@
       "main": [
         [
           {
+            "node": "¿Chatwoot aceptó el envío?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Chatwoot aceptó el envío?": {
+      "main": [
+        [
+          {
             "node": "Registrar Envío en MedApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar fallo (permite reintento)",
             "type": "main",
             "index": 0
           }

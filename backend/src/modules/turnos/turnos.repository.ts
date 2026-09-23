@@ -148,7 +148,7 @@ export class TurnosRepository extends BaseRepository<typeof turnos> {
         inArray(turnos.estado, ['pendiente', 'confirmado']),
         gte(turnos.fecha_hora_inicio, desdeUtc),
         lt(turnos.fecha_hora_inicio, hastaUtc),
-        sql`NOT EXISTS (SELECT 1 FROM log_comunicacion lc WHERE lc.turno_id = ${turnos.id} AND lc.tipo = 'recordatorio')`
+        sql`NOT EXISTS (SELECT 1 FROM log_comunicacion lc WHERE lc.turno_id = ${turnos.id} AND lc.tipo = 'recordatorio' AND lc.estado_entrega <> 'fallido')`
       ),
       orderBy: asc(turnos.fecha_hora_inicio),
       with: {
@@ -245,6 +245,7 @@ export class LogComunicacionRepository {
     respuesta_paciente?: string | null;
     mensaje_externo_id?: string | null;
     detalle?: string | null;
+    estado_entrega?: 'enviado' | 'entregado' | 'leido' | 'fallido';
   }) {
     const result = await this.db
       .insert(logComunicacion)

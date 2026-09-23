@@ -8,6 +8,7 @@ import { rateLimiterMiddleware } from '../../middleware/rate-limiter.middleware.
 import { apiKeyMiddleware } from '../../middleware/api-key.js';
 import { rangoDiaLocal, partesLocales } from '../../core/tiempo.js';
 import { z } from 'zod';
+import { ReservaPublicaRequest, ReservaWhatsappRequest, EstadoEntregaRequest } from './turnos.schemas.js';
 
 const turnosRouter = new Hono();
 
@@ -21,8 +22,33 @@ turnosRouter.get('/recordatorios', apiKeyMiddleware, async (c) => {
 // POST /api/v1/turnos/recordatorios/:id/enviado — n8n informa el envío (A-05)
 turnosRouter.post('/recordatorios/:id/enviado', apiKeyMiddleware, async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const r = await turnosService.registrarRecordatorioEnviado(c.req.param('id')!, body?.mensaje_externo_id);
+  const estado = body?.estado === 'fallido' ? 'fallido' : 'enviado';
+  const r = await turnosService.registrarRecordatorioEnviado(c.req.param('id')!, body?.mensaje_externo_id, estado, body?.detalle);
   return c.json({ data: r });
+});
+
+// POST /api/v1/turnos/recordatorios/estado — estado de entrega informado por Chatwoot (A2-05)
+turnosRouter.post('/recordatorios/estado', apiKeyMiddleware, async (c) => {
+  const parsed = EstadoEntregaRequest.safeParse(await c.req.json());
+  if (!parsed.success) throw new ValidationError(parsed.error.errors.map(e => e.message).join(', '));
+  const r = await turnosService.actualizarEstadoEntrega(parsed.data.mensaje_externo_id, parsed.data.estado, parsed.data.detalle);
+  return c.json({ data: r });
+});
+
+// GET /api/v1/turnos/tablero?clinica_id= — agenda para el tablero de contingencia (A2-06)
+turnosRouter.get('/tablero', apiKeyMiddleware, async (c) => {
+  const clinicaId = c.req.query('clinica_id');
+  if (!clinicaId) throw new ValidationError('clinica_id es requerido');
+  const data = await turnosService.tablero(clinicaId, Number(c.req.query('dias') ?? 14));
+  return c.json({ data, total: data.length });
+});
+
+// POST /api/v1/turnos/whatsapp/reservas — reserva desde el asistente (A2-01): canal fijado por el servidor
+turnosRouter.post('/whatsapp/reservas', apiKeyMiddleware, async (c) => {
+  const parsed = ReservaWhatsappRequest.safeParse(await c.req.json());
+  if (!parsed.success) throw new ValidationError(parsed.error.errors.map(e => e.message).join(', '));
+  const result = await turnosService.crearWhatsapp(parsed.data);
+  return c.json({ data: result }, 201);
 });
 
 // ─── Canal WhatsApp: herramientas del agente conversacional (n8n) ─────────
@@ -135,14 +161,16 @@ turnosRouter.post('/admin', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEP
   }
 
   const user = c.get('user' as never) as AuthUser;
-  const result = await turnosService.crear(parsed.data, user.clinica_id);
+  // El canal lo fija el servidor: toda alta desde el panel es 'manual' (A2-01)
+  const result = await turnosService.crearManual(parsed.data, user.clinica_id);
   return c.json({ data: result }, 201);
 });
 
 // POST /api/v1/turnos — Público (el paciente reserva desde el portal)
 turnosRouter.post('/', rateLimiterMiddleware, async (c) => {
   const body = await c.req.json();
-  const parsed = CrearTurnoRequest.safeParse(body);
+  // Solo canal web con consentimiento; cualquier otro campo (p. ej. canal_reserva) se rechaza (A2-01)
+  const parsed = ReservaPublicaRequest.safeParse(body);
 
   if (!parsed.success) {
     throw new ValidationError(parsed.error.errors.map(e => e.message).join(', '));
@@ -153,7 +181,7 @@ turnosRouter.post('/', rateLimiterMiddleware, async (c) => {
     throw new ValidationError('clinica_id es requerido (query parameter o body)');
   }
 
-  const result = await turnosService.crear(parsed.data, clinicaId);
+  const result = await turnosService.crearPublico(parsed.data, clinicaId);
   return c.json({ data: result }, 201);
 });
 

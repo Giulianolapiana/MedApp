@@ -104,6 +104,7 @@ export const logComunicacion = pgTable('log_comunicacion', {
   canal: text('canal').default('whatsapp').notNull(),
   respuesta_paciente: text('respuesta_paciente'),
   mensaje_externo_id: text('mensaje_externo_id'),
+  estado_entrega: text('estado_entrega').default('enviado').notNull(),
   detalle: text('detalle'),
   timestamp: timestamp('timestamp', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });

@@ -32,3 +32,7 @@ playwright-report/
 test-results/
 *.patch
 evaluacion/simulacion/__pycache__/
+
+# Configuración local de asistentes de código (no forma parte del proyecto)
+.agents/
+skills-lock.json

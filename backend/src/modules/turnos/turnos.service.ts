@@ -1,9 +1,11 @@
 import { db } from '../../core/database.js';
-import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../../core/errors.js';
+import { NotFoundError, ConflictError, ValidationError, ForbiddenError, TooManyRequestsError } from '../../core/errors.js';
 import { TurnosRepository, HistorialTurnosRepository, LogComunicacionRepository } from './turnos.repository.js';
 import { PacientesRepository } from '../pacientes/pacientes.repository.js';
 import { validarTransicion, getTransicionesPosibles, EstadoTurno } from './turnos.fsm.js';
-import { CrearTurnoType, AvanzarEstadoType } from './turnos.schemas.js';
+import { CrearTurnoType, AvanzarEstadoType, ReservaPublicaRequest, ReservaWhatsappRequest } from './turnos.schemas.js';
+import { z } from 'zod';
+import { sql } from 'drizzle-orm';
 import { n8nService } from './n8n.service.js';
 import { logger } from '../../core/logger.js';
 import { traducirErrorPg } from '../../core/pg-errors.js';
@@ -75,7 +77,38 @@ export class TurnosService {
    *    de la base es la garantía ante reservas simultáneas (K-07).
    * 4. Registra el alta en el historial append-only.
    */
-  async crear(data: CrearTurnoType, clinicaId: string) {
+  /** Turnero público: canal 'web' fijado por el servidor y consentimiento exigido (A2-01). */
+  async crearPublico(data: z.infer<typeof ReservaPublicaRequest>, clinicaId: string) {
+    return this.crear({ ...data, canal_reserva: 'web', consentimiento_privacidad: true }, clinicaId);
+  }
+
+  /** Panel administrativo (JWT + rol): canal 'manual'. */
+  async crearManual(data: CrearTurnoType, clinicaId: string) {
+    return this.crear({ ...data, canal_reserva: 'manual', consentimiento_privacidad: undefined }, clinicaId);
+  }
+
+  /** Asistente de WhatsApp (x-api-key): canal 'whatsapp' y teléfono del remitente validado por n8n. */
+  async crearWhatsapp(data: z.infer<typeof ReservaWhatsappRequest>) {
+    return this.crear({
+      profesional_id: data.profesional_id,
+      fecha_hora_inicio: data.fecha_hora_inicio,
+      canal_reserva: 'whatsapp',
+      paciente: { nombre_completo: data.nombre_completo, telefono_whatsapp: data.telefono },
+    }, data.clinica_id);
+  }
+
+  /** Límite de reservas por teléfono en la última hora, calculado en la base (A2-02). */
+  private async verificarLimiteTelefono(clinicaId: string, telefono: string) {
+    const max = Number(process.env.RESERVAS_POR_TELEFONO_HORA ?? 3);
+    const r = await db.execute(sql`
+      SELECT count(*)::int AS n FROM turnos t JOIN pacientes p ON p.id = t.paciente_id
+      WHERE t.clinica_id = ${clinicaId} AND p.telefono_whatsapp = ${telefono}
+        AND t.creado_en > now() - interval '1 hour'`);
+    const n = Number((r as unknown as { rows?: { n: number }[] }).rows?.[0]?.n ?? (r as unknown as { n: number }[])[0]?.n ?? 0);
+    if (n >= max) throw new TooManyRequestsError('Se alcanzó el límite de reservas para este teléfono. Intentá más tarde.');
+  }
+
+  private async crear(data: CrearTurnoType, clinicaId: string) {
     let inicioUtc: string;
     try {
       inicioUtc = normalizarAUtc(data.fecha_hora_inicio);
@@ -95,6 +128,9 @@ export class TurnosService {
     // A-02: el turnero web exige aceptación expresa de la política de privacidad
     if (data.canal_reserva === 'web' && data.consentimiento_privacidad !== true) {
       throw new ValidationError('Debés aceptar la política de privacidad para reservar');
+    }
+    if (data.canal_reserva !== 'manual') {
+      await this.verificarLimiteTelefono(clinicaId, telefono);
     }
 
     let result;
@@ -264,15 +300,49 @@ export class TurnosService {
     });
   }
 
-  /** n8n informa que envió el recordatorio. Idempotente por índice único. */
-  async registrarRecordatorioEnviado(turnoId: string, mensajeExternoId?: string) {
+  /**
+   * n8n informa el resultado del envío del recordatorio (A2-05).
+   * 'enviado': Chatwoot aceptó el mensaje; un segundo registro se ignora (índice único).
+   * 'fallido': no bloquea: el turno vuelve a quedar disponible para un reintento.
+   */
+  async registrarRecordatorioEnviado(turnoId: string, mensajeExternoId?: string, estado: 'enviado' | 'fallido' = 'enviado', detalle?: string) {
     const turno = await db.query.turnos.findFirst({ where: (t, { eq }) => eq(t.id, turnoId) });
     if (!turno) throw new NotFoundError('Turno no encontrado');
     const registro = await new LogComunicacionRepository(db).registrar({
       turno_id: turnoId, clinica_id: turno.clinica_id, tipo: 'recordatorio',
-      mensaje_externo_id: mensajeExternoId ?? null,
+      mensaje_externo_id: mensajeExternoId ?? null, estado_entrega: estado, detalle: detalle ?? null,
     });
-    return { registrado: registro !== null, duplicado: registro === null };
+    return { registrado: registro !== null, duplicado: registro === null, estado };
+  }
+
+  /** Estado de entrega informado por WhatsApp a través de Chatwoot (entregado, leído o fallido). */
+  async actualizarEstadoEntrega(mensajeExternoId: string, estado: 'enviado' | 'entregado' | 'leido' | 'fallido', detalle?: string) {
+    const r = await db.execute(sql`
+      UPDATE log_comunicacion SET estado_entrega = ${estado}, detalle = coalesce(${detalle ?? null}, detalle)
+      WHERE mensaje_externo_id = ${mensajeExternoId} RETURNING turno_id`);
+    const filas = (r as unknown as { rows?: unknown[] }).rows ?? (r as unknown as unknown[]);
+    return { actualizados: filas.length };
+  }
+
+  /** Agenda de la clínica para el tablero de contingencia (A2-06): n8n ya no lee la base. */
+  async tablero(clinicaId: string, dias = 14) {
+    const r = await db.execute(sql`
+      SELECT t.id, t.fecha_hora_inicio, pr.nombre AS profesional, p.nombre_completo AS paciente,
+             p.telefono_whatsapp AS telefono, t.estado, t.canal_reserva
+      FROM turnos t
+      JOIN pacientes p ON p.id = t.paciente_id
+      JOIN profesionales pr ON pr.id = t.profesional_id
+      WHERE t.clinica_id = ${clinicaId}
+        AND t.fecha_hora_inicio >= now() - interval '1 day'
+        AND t.fecha_hora_inicio <  now() + (${dias} || ' days')::interval
+      ORDER BY t.fecha_hora_inicio`);
+    const filas = ((r as unknown as { rows?: any[] }).rows ?? (r as unknown as any[]));
+    const ahora = partesLocales(new Date());
+    return filas.map((f: any) => {
+      const local = partesLocales(String(f.fecha_hora_inicio instanceof Date ? f.fecha_hora_inicio.toISOString() : f.fecha_hora_inicio));
+      return { id: f.id, fecha: local.fecha, hora: local.hora, profesional: f.profesional, paciente: f.paciente,
+               telefono: f.telefono, estado: f.estado, canal_reserva: f.canal_reserva, actualizado: `${ahora.fecha} ${ahora.hora}` };
+    });
   }
 
   async updateGoogleEventId(id: string, googleEventId: string) {

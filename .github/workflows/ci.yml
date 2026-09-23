@@ -35,12 +35,12 @@ jobs:
         run: cd backend && pnpm test
 
   integration:
-    name: Integración con PostgreSQL (concurrencia, zona horaria, FSM)
+    name: Integración con PostgreSQL (esquema de producción)
     runs-on: ubuntu-latest
     needs: lint-and-test
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: medapp_test
@@ -63,13 +63,8 @@ jobs:
           version: 9
       - name: Instalar dependencias
         run: cd backend && pnpm install
-      - name: Crear esquema y aplicar migración
-        run: |
-          cd backend
-          npx drizzle-kit push --force
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-16_ronda1_integridad.sql
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-17_ronda2_respaldos.sql
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/2026-09-18_ronda3_endurecimiento.sql
+      - name: Crear la base desde backend/sql/esquema.sql (no desde Drizzle)
+        run: cd backend && bash sql/pruebas/cargar_esquema.sh
       - name: Pruebas de integración
         run: cd backend && pnpm test
 

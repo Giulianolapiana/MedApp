@@ -39,7 +39,7 @@ export async function crearTurno(medicoId: string, fecha: Date, hora: string, pa
       body: JSON.stringify({
         profesional_id: medicoId,
         fecha_hora_inicio: fechaHoraInicioIso,
-        canal_reserva: 'web',
+        // El canal lo fija el servidor (siempre 'web' en el endpoint público)
         consentimiento_privacidad: consentimientoPrivacidad,
         clinica_id: import.meta.env.VITE_CLINICA_ID,
         paciente: {

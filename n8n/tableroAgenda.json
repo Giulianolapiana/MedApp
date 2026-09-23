@@ -1,0 +1,222 @@
+{
+  "name": "MedAPP - Tablero operativo de agenda",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-backup",
+      "name": "Todas las noches a las 23:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-clinica",
+              "name": "clinica_id",
+              "value": "9569ad65-a5fd-4692-9804-be6ae60fad76",
+              "type": "string"
+            },
+            {
+              "id": "cfg-sheet",
+              "name": "planilla_url",
+              "value": "https://docs.google.com/spreadsheets/d/REEMPLAZAR_ID_PLANILLA/edit",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cfg-tablero",
+      "name": "Configuración de la clínica",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Configuración de la clínica').item.json.planilla_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Agenda",
+          "cachedResultName": "Agenda"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "id"
+          ]
+        },
+        "options": {}
+      },
+      "id": "gs-agenda",
+      "name": "Sheets → Agenda",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -40,
+        0
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_GSHEETS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.verticedev.online/api/v1/backups/registro",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clinica_id: $('Configuración de la clínica').item.json.clinica_id, tipo_artefacto: 'tablero_agenda', tipo_ejecucion: 'automatica', estado: 'completado', archivo_url: $('Configuración de la clínica').item.json.planilla_url, detalle: `${$('Separar turnos').all().length} turnos exportados` }) }}",
+        "options": {}
+      },
+      "id": "reg-tablero",
+      "name": "Registrar tablero en MedApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        0
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.verticedev.online/api/v1/turnos/tablero?clinica_id={{ $json.clinica_id }}&dias=14",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "http-tablero",
+      "name": "Agenda próximos 14 días (API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -260,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REEMPLAZAR_AL_IMPORTAR",
+          "name": "MedApp API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return ($input.first().json.data || []).map(t => ({ json: t }));"
+      },
+      "id": "split-tablero",
+      "name": "Separar turnos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -150,
+        160
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Todas las noches a las 23:00": {
+      "main": [
+        [
+          {
+            "node": "Configuración de la clínica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración de la clínica": {
+      "main": [
+        [
+          {
+            "node": "Agenda próximos 14 días (API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets → Agenda": {
+      "main": [
+        [
+          {
+            "node": "Registrar tablero en MedApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agenda próximos 14 días (API)": {
+      "main": [
+        [
+          {
+            "node": "Separar turnos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar turnos": {
+      "main": [
+        [
+          {
+            "node": "Sheets → Agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "backup-gsheets-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

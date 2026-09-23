@@ -1,0 +1,778 @@
+{
+  "name": "MedAPP - Asistente conversacional",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b1967d50-b09a-4eac-9247-de313c0f2921",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -448,
+        240
+      ],
+      "id": "3c849eec-16a6-4453-98bf-6bfd9ae67397",
+      "name": "Webhook",
+      "webhookId": "b1967d50-b09a-4eac-9247-de313c0f2921"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d3a9d07f-ecac-4726-b639-c53a32e2995b",
+              "leftValue": "={{ $json.body.event === 'message_created' && $json.body.conversation.messages[0].sender_type === 'Contact' && $json.body.message_type === 'incoming' }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "534631bf-f4ac-48f5-933b-b8891839278a",
+              "leftValue": "={{ ($json.body.conversation.labels || []).includes('bot_off') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        240
+      ],
+      "id": "6a97693f-4df0-4c1d-ad77-bf16931c8d7b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "serverUrl",
+              "value": "={{ $('Configuración').item.json.serverUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "e2",
+              "name": "accoundID",
+              "value": "={{ $('Configuración').item.json.accountId }}",
+              "type": "string"
+            },
+            {
+              "id": "e3",
+              "name": "conversaccionID",
+              "value": "={{ $json.conversacion_id }}",
+              "type": "number"
+            },
+            {
+              "id": "e4",
+              "name": "chatID",
+              "value": "={{ $json.telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "e5",
+              "name": "contenido",
+              "value": "={{ $json.contenido }}",
+              "type": "string"
+            },
+            {
+              "id": "e6",
+              "name": "usuario",
+              "value": "={{ $json.usuario }}",
+              "type": "string"
+            },
+            {
+              "id": "e7",
+              "name": "telefono",
+              "value": "={{ $json.telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "e8",
+              "name": "apiUrl",
+              "value": "={{ $('Configuración').item.json.apiUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "e9",
+              "name": "clinicaId",
+              "value": "={{ $('Configuración').item.json.clinicaId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1092,
+        240
+      ],
+      "id": "2727a7cd-6350-4bf2-944b-9c2fd9515803",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Mensaje del paciente: {{ $json.contenido }}\nNombre del paciente: {{ $json.usuario }}",
+        "options": {
+          "systemMessage": "Sos Alfredo, el asistente virtual de MedAPP 🏥. Ayudás a pacientes a reservar turnos médicos por WhatsApp de forma simple y amigable.\n\n## Tu Personalidad\n- Sos cordial, profesional y eficiente\n- Usás SIEMPRE español rioplatense con voseo (vos, tenés, querés, podés). Nunca uses \"tú\" ni \"tienes\"\n- Sos conciso: no escribís párrafos largos por WhatsApp\n- Usás emojis con moderación (👋, ✅, 📅, ⏰, 👨‍⚕️)\n\n## Flujo de Reserva de Turno\nSeguí estos pasos EN ORDEN:\n\n1. **Saludo**: Si es la primera interacción, saludá y preguntá en qué podés ayudar\n2. **Listar profesionales**: Cuando pida un turno, usá la herramienta `listar_profesionales` para mostrar los médicos disponibles con su especialidad. Mostrá la lista de forma compacta (nombre - especialidad)\n3. **Consultar días**: Cuando elija un profesional, usá `ver_dias_disponibles` para mostrarle qué días de la semana atiende. Traducí los números: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado\n4. **Consultar horarios**: Cuando elija una fecha (formato YYYY-MM-DD), usá `ver_horarios_disponibles` para mostrar los slots libres. Mostrá solo los horarios, no el JSON crudo\n5. **Confirmar datos**: Antes de reservar, mostrá un resumen y pedí confirmación:\n   - 👨‍⚕️ Profesional: [nombre]\n   - 📅 Fecha: [fecha legible]\n   - ⏰ Hora: [hora]\n   - 👤 Paciente: [nombre]\n6. **Reservar**: Cuando confirme, usá `reservar_turno` para crear el turno\n\n## Datos del Paciente\n- El nombre del paciente ya lo tenés del contexto del mensaje (campo 'Nombre del paciente')\n- El teléfono lo agrega el sistema en las herramientas; nunca lo pidas ni lo escribas\n- NO le pidas estos datos al paciente si ya los tenés\n\n## Confirmar, cancelar o reprogramar un turno\n- Si el paciente responde a un recordatorio o pide ver/confirmar/cancelar/cambiar un turno, usá `mis_turnos` para ver SUS turnos activos (la herramienta ya usa el teléfono del remitente).\n- Si tiene más de un turno, preguntá a cuál se refiere antes de actuar.\n- CONFIRMAR: usá `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del ...?\") y recién después usá `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: es cancelar el turno actual y reservar uno nuevo. Primero buscá y mostrá horarios libres; cuando el paciente elija, cancelá el anterior con `responder_turno` y reservá el nuevo con `reservar_turno`. Si la reserva nueva falla, avisale que el turno anterior quedó cancelado y ofrecé otro horario.\n- Nunca digas que una acción se hizo si la herramienta devolvió error.\n\n## Datos personales (Ley 25.326)\n- En la primera interacción informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en https://medapp.example/privacidad.\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta.\n\n## Reglas IMPORTANTES\n- NUNCA inventes información. Solo usá datos que devuelvan las herramientas\n- Si no hay turnos disponibles en una fecha, sugerí otra fecha cercana\n- Las fechas siempre en formato YYYY-MM-DD para las herramientas. Todas las horas son hora de Mendoza.\n- Para reservar, fecha_hora_inicio debe ser formato ISO: YYYY-MM-DDTHH:mm:00 (ej: 2026-09-15T10:00:00)\n- El canal_reserva siempre es \"whatsapp\"\n- Si pregunta algo que no sea sobre turnos médicos, respondé amablemente que solo podés ayudar con la gestión de turnos\n- Cuando muestres profesionales, NO muestres los IDs técnicos (UUIDs). Usá números (1, 2, 3) y mapeá internamente"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ba7f9a1b-b977-42c1-a2c0-00746953d5e1",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        208
+      ],
+      "id": "51d7db41-4859-4959-b142-8fc9b2d402ef",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iWbEmxwCtrf07ZYk",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatID }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        208
+      ],
+      "id": "341e52a5-59fe-4c19-a4ff-a3953f0cdbad",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Edit Fields').item.json.serverUrl }}/api/v1/accounts/{{ $('Edit Fields').item.json.accoundID }}/conversations/{{ $('Edit Fields').item.json.conversaccionID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": {{ JSON.stringify($json.output) }},\n  \"private\": false,\n  \"message_type\": \"outgoing\",\n  \"sender\":\n  {\n    \"type\": \"bot\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        592,
+        0
+      ],
+      "id": "94996d86-4991-4bed-9cb2-41ce509d7064",
+      "name": "Respuesta",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Lista todos los profesionales médicos disponibles en la clínica con su nombre y especialidad. Usá esta herramienta cuando el paciente pregunte qué médicos hay.",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/profesionales?clinica_id={{ $('Edit Fields').item.json.clinicaId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "method": "GET"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        -64,
+        464
+      ],
+      "id": "decde1ca-192b-4fe6-80a5-176806ee8dc4",
+      "name": "listar_profesionales",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta qué días de la semana atiende un profesional. Devuelve números (0=Domingo, 1=Lunes, etc).",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/disponibilidad/{{ $fromAI('profesional_id', 'UUID del médico') }}/dias?clinica_id={{ $('Edit Fields').item.json.clinicaId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "method": "GET"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        128,
+        464
+      ],
+      "id": "52256cf0-cab6-464c-b62a-2e64479754e8",
+      "name": "ver_dias_disponibles",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta los horarios (slots) libres de un profesional en una fecha específica.",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/disponibilidad/{{ $fromAI('profesional_id', 'UUID del médico') }}/slots?fecha={{ $fromAI('fecha', 'Fecha en formato YYYY-MM-DD') }}&clinica_id={{ $('Edit Fields').item.json.clinicaId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "method": "GET"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        304,
+        432
+      ],
+      "id": "7013deed-a773-4651-9786-a9a9892dbe39",
+      "name": "ver_horarios_disponibles",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Crea un turno para el paciente que está escribiendo. Requiere profesional_id y fecha_hora_inicio. El nombre y el teléfono los agrega el sistema.",
+        "method": "POST",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/turnos/whatsapp/reservas",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clinica_id: $('Edit Fields').item.json.clinicaId, telefono: $('Edit Fields').item.json.telefono, nombre_completo: $('Edit Fields').item.json.usuario, profesional_id: $fromAI('profesional_id', 'UUID del médico'), fecha_hora_inicio: $fromAI('fecha_hora_inicio', 'Fecha y hora local en formato YYYY-MM-DDTHH:mm:00') }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        464,
+        448
+      ],
+      "id": "7b0ca2f6-ab76-45bf-a04c-b449350dc184",
+      "name": "reservar_turno",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Busca los turnos activos que tiene el paciente actual.",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/turnos/whatsapp/mis-turnos?clinica_id={{ $('Edit Fields').item.json.clinicaId }}&telefono={{ encodeURIComponent($('Edit Fields').item.json.telefono) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "method": "GET"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        752,
+        432
+      ],
+      "id": "a0129a4a-2e2b-4f5d-a8c6-aacf473159f8",
+      "name": "mis_turnos",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Confirma o cancela un turno del paciente que está escribiendo. Requiere turno_id (de mis_turnos) y accion: confirmado o cancelado. El teléfono lo agrega el sistema.",
+        "method": "POST",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/turnos/whatsapp/{{ $fromAI('turno_id', 'El ID del turno, obtenido de mis_turnos') }}/respuesta",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clinica_id: $('Edit Fields').item.json.clinicaId, telefono: $('Edit Fields').item.json.telefono, accion: $fromAI('accion', 'Exactamente confirmado o cancelado'), mensaje: String($('Edit Fields').item.json.contenido || '').slice(0, 500) }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        976,
+        432
+      ],
+      "id": "c01516fd-8365-480f-afac-7937d65ea1b9",
+      "name": "responder_turno",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "serverUrl",
+              "value": "https://chatwoot.verticedev.online",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "accountId",
+              "value": "3",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "inboxId",
+              "value": "6",
+              "type": "string"
+            },
+            {
+              "id": "c4",
+              "name": "apiUrl",
+              "value": "https://api.verticedev.online/api/v1",
+              "type": "string"
+            },
+            {
+              "id": "c5",
+              "name": "clinicaId",
+              "value": "9569ad65-a5fd-4692-9804-be6ae60fad76",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cfg-asistente",
+      "name": "Configuración",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -8,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.serverUrl }}/api/v1/accounts/{{ $json.accountId }}/conversations/{{ $('Webhook').item.json.body.conversation.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "cw-conv",
+      "name": "Chatwoot: conversación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        212,
+        240
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Configuración').item.json.serverUrl }}/api/v1/accounts/{{ $('Configuración').item.json.accountId }}/conversations/{{ $('Webhook').item.json.body.conversation.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "cw-msgs",
+      "name": "Chatwoot: mensajes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        240
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// A2-03: el webhook no se toma como fuente de verdad. Cada evento se confirma\n// consultando a Chatwoot con credenciales propias: el mensaje debe existir en esa\n// conversación, ser entrante, coincidir en contenido y pertenecer a la bandeja\n// configurada. El teléfono se toma de Chatwoot, no del cuerpo del webhook.\nconst body = $('Webhook').first().json.body || {};\nconst cfg = $('Configuración').first().json;\nconst conv = $('Chatwoot: conversación').first().json || {};\nconst msgs = ($('Chatwoot: mensajes').first().json || {}).payload || [];\nconst m = msgs.find(x => String(x.id) === String(body.id));\nconst telefono = conv?.meta?.sender?.phone_number || '';\nconst valido = !!m && m.message_type === 0 && (m.content || '') === (body.content || '')\n  && Number(conv.inbox_id) === Number(cfg.inboxId) && !!telefono;\nreturn [{ json: { valido, telefono, contenido: m ? m.content : '', usuario: conv?.meta?.sender?.name || '',\n  conversacion_id: conv.id, motivo: valido ? 'ok' : 'evento no verificado en Chatwoot' } }];"
+      },
+      "id": "cw-valida",
+      "name": "¿Mensaje auténtico?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        652,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valido }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-valido",
+      "name": "¿Verificado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        872,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.body.event === 'message_updated' && $json.body.message_type === 'outgoing' && ['sent','delivered','read','failed'].includes($json.body.status) }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-estado",
+      "name": "¿Estado de entrega?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -228,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.verticedev.online/api/v1/turnos/recordatorios/estado",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.body.id), estado: ({ sent: 'enviado', delivered: 'entregado', read: 'leido', failed: 'fallido' })[$json.body.status], detalle: $json.body.content_attributes?.external_error || undefined }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "post-estado",
+      "name": "Registrar estado de entrega",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -8,
+        500
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "¿Estado de entrega?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "listar_profesionales": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ver_dias_disponibles": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ver_horarios_disponibles": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reservar_turno": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mis_turnos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "responder_turno": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot: conversación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot: conversación": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot: mensajes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot: mensajes": {
+      "main": [
+        [
+          {
+            "node": "¿Mensaje auténtico?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Mensaje auténtico?": {
+      "main": [
+        [
+          {
+            "node": "¿Verificado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Verificado?": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "¿Estado de entrega?": {
+      "main": [
+        [
+          {
+            "node": "Registrar estado de entrega",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "12efacd6-273b-4229-84b6-8d7e7f578c4b",
+  "meta": {
+    "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
+  },
+  "nodeGroups": [],
+  "id": "7drb9QsLK7TREQ5G",
+  "tags": []
+}

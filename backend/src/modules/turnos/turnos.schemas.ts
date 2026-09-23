@@ -15,6 +15,36 @@ export const CrearTurnoRequest = z.object({
   }),
 });
 
+/** Reserva pública (turnero web): canal fijo 'web' y consentimiento obligatorio (A2-01). */
+export const ReservaPublicaRequest = z.object({
+  profesional_id: z.string().uuid('ID de profesional inválido'),
+  clinica_id: z.string().uuid('ID de clinica inválido').optional(),
+  fecha_hora_inicio: z.string().min(1, 'La fecha y hora de inicio es requerida'),
+  consentimiento_privacidad: z.literal(true, {
+    errorMap: () => ({ message: 'Debés aceptar la política de privacidad para reservar' }),
+  }),
+  paciente: z.object({
+    nombre_completo: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+    telefono_whatsapp: z.string().min(8, 'Teléfono inválido'),
+    email: z.string().email('Email inválido').optional().nullable(),
+  }),
+}).strict();
+
+/** Reserva por WhatsApp: solo n8n (x-api-key); el teléfono es el del remitente validado. */
+export const ReservaWhatsappRequest = z.object({
+  clinica_id: z.string().uuid(),
+  telefono: z.string().min(8),
+  nombre_completo: z.string().min(2).max(150),
+  profesional_id: z.string().uuid(),
+  fecha_hora_inicio: z.string().min(1),
+}).strict();
+
+export const EstadoEntregaRequest = z.object({
+  mensaje_externo_id: z.string().min(1),
+  estado: z.enum(['enviado', 'entregado', 'leido', 'fallido']),
+  detalle: z.string().max(500).optional(),
+});
+
 export const AvanzarEstadoRequest = z.object({
   nuevo_estado: z.enum(['confirmado', 'asistido', 'cancelado', 'no_show']),
   motivo: z.string().optional(),

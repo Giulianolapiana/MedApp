@@ -38,7 +38,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
 
   it('K-07: 20 reservas simultáneas del mismo horario → 1 aceptada, 19 rechazadas con 409', async () => {
     const intentos = Array.from({ length: 20 }, (_, i) =>
-      turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T10:00:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: paciente(i) }, clinicaId)
+      turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T10:00:00`, consentimiento_privacidad: true, paciente: paciente(i) }, clinicaId)
     );
     const r = await Promise.allSettled(intentos);
     const ok = r.filter(x => x.status === 'fulfilled');
@@ -58,8 +58,8 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
 
   it('A-04: una reserva pública no sobrescribe el nombre de un paciente existente', async () => {
     const tel = paciente(99).telefono_whatsapp;
-    await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:00:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: { nombre_completo: 'Nombre Original', telefono_whatsapp: tel } }, clinicaId);
-    await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: { nombre_completo: 'Intruso', telefono_whatsapp: tel, email: 'x@x.com' } }, clinicaId);
+    await turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:00:00`, consentimiento_privacidad: true, paciente: { nombre_completo: 'Nombre Original', telefono_whatsapp: tel } }, clinicaId);
+    await turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, consentimiento_privacidad: true, paciente: { nombre_completo: 'Intruso', telefono_whatsapp: tel, email: 'x@x.com' } }, clinicaId);
     const p = await db.query.pacientes.findFirst({ where: (t: any, { eq }: any) => eq(t.telefono_whatsapp, tel) });
     expect(p?.nombre_completo).toBe('Nombre Original');
   });
@@ -79,17 +79,18 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     const turnos = await turnosService.proximosDelPaciente(clinicaId, tel);
     const t11 = turnos.find((t: any) => t.cuando.includes('11:00'))!;
     await turnosService.responderDesdeWhatsapp(clinicaId, t11.turno_id, tel, 'cancelado', 'No puedo ir');
-    const nuevo = await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, canal_reserva: 'whatsapp', paciente: paciente(50) }, clinicaId);
+    const nuevo = await turnosService.crearWhatsapp({ clinica_id: clinicaId, profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, nombre_completo: paciente(50).nombre_completo, telefono: paciente(50).telefono_whatsapp });
     expect(nuevo.estado).toBe('pendiente');
   });
 
   it('K-06/A-02: un turno reservado en la web con "261..." se gestiona desde WhatsApp "+549261..." y guarda el consentimiento', async () => {
-    await turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:30:00`, canal_reserva: 'web', consentimiento_privacidad: true, paciente: { nombre_completo: 'Ana Web', telefono_whatsapp: '2614123456' } }, clinicaId);
+    await turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:30:00`, consentimiento_privacidad: true, paciente: { nombre_completo: 'Ana Web', telefono_whatsapp: '2614123456' } }, clinicaId);
     const turnos = await turnosService.proximosDelPaciente(clinicaId, '+5492614123456');
     expect(turnos).toHaveLength(1);
     const p = await db.query.pacientes.findFirst({ where: (t: any, { eq }: any) => eq(t.telefono_whatsapp, '+5492614123456') });
     expect(p?.consentimiento_en).toBeTruthy();
-    await expect(turnosService.crear({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:30:00`, canal_reserva: 'web', paciente: { nombre_completo: 'Sin Consentimiento', telefono_whatsapp: '2614000000' } }, clinicaId)).rejects.toMatchObject({ statusCode: 400 });
+    const { ReservaPublicaRequest } = await import('../modules/turnos/turnos.schemas.js');
+    expect(ReservaPublicaRequest.safeParse({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:30:00`, paciente: { nombre_completo: 'Sin Consentimiento', telefono_whatsapp: '2614000000' } }).success).toBe(false);
   });
 
   it('A-10: la base rechaza transiciones inválidas aunque se salteen la API', async () => {
@@ -107,5 +108,43 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     const otraVez = await turnosService.obtenerTurnosParaRecordatorio(fecha);
     expect(otraVez.find((t: any) => t.turno_id === id)).toBeUndefined();
     expect(pendientes[0].cuando).toMatch(/\d{2}:\d{2} hs/);
+  });
+
+  it('A2-01: el endpoint público no acepta otro canal ni reservas sin consentimiento; el panel siempre registra canal manual', async () => {
+    const { ReservaPublicaRequest } = await import('../modules/turnos/turnos.schemas.js');
+    const base = { profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T15:00:00`, paciente: { nombre_completo: 'Canal Falso', telefono_whatsapp: '2614777777' } };
+    expect(ReservaPublicaRequest.safeParse({ ...base, consentimiento_privacidad: true, canal_reserva: 'whatsapp' }).success).toBe(false);
+    expect(ReservaPublicaRequest.safeParse({ ...base, canal_reserva: 'manual' }).success).toBe(false);
+    expect(ReservaPublicaRequest.safeParse({ ...base, consentimiento_privacidad: false }).success).toBe(false);
+    const manual = await turnosService.crearManual({ ...base, canal_reserva: 'web' } as any, clinicaId);
+    expect(manual.canal_reserva).toBe('manual');
+  });
+
+  it('A2-02: un mismo teléfono no puede reservar más de 3 turnos por hora (límite calculado en la base)', async () => {
+    const tel = '2614555555';
+    for (const h of ['15:30', '16:00', '16:30']) {
+      await turnosService.crearWhatsapp({ clinica_id: clinicaId, profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T${h}:00`, nombre_completo: 'Límite', telefono: tel });
+    }
+    await expect(turnosService.crearWhatsapp({ clinica_id: clinicaId, profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T17:00:00`, nombre_completo: 'Límite', telefono: tel }))
+      .rejects.toMatchObject({ statusCode: 429 });
+  });
+
+  it('A2-05: un recordatorio fallido no bloquea el reintento y el estado de entrega se actualiza', async () => {
+    const pendientes = await turnosService.obtenerTurnosParaRecordatorio(fecha);
+    const t = pendientes[0];
+    expect(t).toBeTruthy();
+    expect((await turnosService.registrarRecordatorioEnviado(t.turno_id, 'msg-falla', 'fallido', 'Meta rechazó el envío')).registrado).toBe(true);
+    const otraVez = await turnosService.obtenerTurnosParaRecordatorio(fecha);
+    expect(otraVez.find((x: any) => x.turno_id === t.turno_id)).toBeTruthy();
+    expect((await turnosService.registrarRecordatorioEnviado(t.turno_id, 'msg-ok')).registrado).toBe(true);
+    expect((await turnosService.actualizarEstadoEntrega('msg-ok', 'entregado')).actualizados).toBe(1);
+    const log = await db.query.logComunicacion.findFirst({ where: (l: any, { eq }: any) => eq(l.mensaje_externo_id, 'msg-ok') });
+    expect(log?.estado_entrega).toBe('entregado');
+  });
+
+  it('A2-06: el tablero de agenda se obtiene por la API con fecha y hora de Mendoza', async () => {
+    const filas = await turnosService.tablero(clinicaId, 30); // la fecha de prueba está a más de 14 días
+    expect(filas.length).toBeGreaterThan(0);
+    expect(filas.some((f: any) => f.hora === '10:00')).toBe(true);
   });
 });
