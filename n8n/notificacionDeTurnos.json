@@ -136,7 +136,7 @@
             {
               "id": "tpl-idioma",
               "name": "plantilla_idioma",
-              "value": "es_ES",
+              "value": "es",
               "type": "string"
             }
           ]
