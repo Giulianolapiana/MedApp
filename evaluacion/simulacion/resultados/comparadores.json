@@ -1,0 +1,204 @@
+{
+  "semilla": 20260916,
+  "escenarios_por_celda": 10000,
+  "parametros": {
+    "p0": [
+      "Ausentismo de línea base",
+      "Uniforme(0,23; 0,34)",
+      "Giunta (2019)"
+    ],
+    "rr_msg": [
+      "RR de asistencia, mensaje frente a no recordar",
+      "Lognormal, IC 95 % 1,03–1,26",
+      "Gurol-Urganci et al. (2013)"
+    ],
+    "rr_msg_tel": [
+      "RR de asistencia, mensaje frente a llamada",
+      "Lognormal, IC 95 % 0,95–1,02",
+      "Gurol-Urganci et al. (2013)"
+    ],
+    "tope": [
+      "Ausencias evitables por recordatorio (olvido)",
+      "Fijo 0,44",
+      "Briatore et al. (2020)"
+    ],
+    "entrega": [
+      "Recordatorios de WhatsApp entregados",
+      "Uniforme(0,85; 0,98)",
+      "Supuesto del autor"
+    ],
+    "cobertura_tel": [
+      "Pacientes que el personal logra contactar por teléfono (C1)",
+      "Uniforme(0,50; 0,80)",
+      "Supuesto del autor"
+    ],
+    "c0": [
+      "Ausentes que avisan en la línea base",
+      "Uniforme(0,05; 0,25)",
+      "Supuesto del autor"
+    ],
+    "dc": [
+      "Aviso incremental atribuible al canal bidireccional",
+      "Escenario: 0; 0,10; 0,25; 0,40",
+      "Sin ancla bibliográfica"
+    ],
+    "reocupa": [
+      "Reasignación de turnos liberados",
+      "Uniforme(0,00; 0,40)",
+      "Supuesto del autor"
+    ],
+    "llenado": [
+      "Proporción de la capacidad reservada",
+      "Uniforme(0,75; 0,95)",
+      "Supuesto del autor"
+    ]
+  },
+  "grilla": [
+    {
+      "comparador": "C0",
+      "dc": 0.0,
+      "reduccion_mediana": 0.32111240020891996,
+      "reduccion_p05": 0.0768019951266691,
+      "reduccion_p95": 0.4845567624623602,
+      "prob_umbral_a": 0.2519,
+      "ocupacion_mediana": 0.11721611721611724,
+      "prob_umbral_b": 0.2499,
+      "no_show_base_mediana": 0.25186177584773173,
+      "no_show_medapp_mediana": 0.17121105328711705
+    },
+    {
+      "comparador": "C0",
+      "dc": 0.1,
+      "reduccion_mediana": 0.3806346843408193,
+      "reduccion_p05": 0.14895887219279874,
+      "reduccion_p95": 0.5326229144921042,
+      "prob_umbral_a": 0.4335,
+      "ocupacion_mediana": 0.1215471886298467,
+      "prob_umbral_b": 0.273,
+      "no_show_base_mediana": 0.2518319509427343,
+      "no_show_medapp_mediana": 0.15584415584415584
+    },
+    {
+      "comparador": "C0",
+      "dc": 0.25,
+      "reduccion_mediana": 0.4753149805109957,
+      "reduccion_p05": 0.2700636056802025,
+      "reduccion_p95": 0.6125153455331339,
+      "prob_umbral_a": 0.7396,
+      "ocupacion_mediana": 0.12903225806451601,
+      "prob_umbral_b": 0.3309,
+      "no_show_base_mediana": 0.2520053619302949,
+      "no_show_medapp_mediana": 0.13196480938416422
+    },
+    {
+      "comparador": "C0",
+      "dc": 0.4,
+      "reduccion_mediana": 0.5699817029251815,
+      "reduccion_p05": 0.39436776094276094,
+      "reduccion_p95": 0.6974469909518883,
+      "prob_umbral_a": 0.9452,
+      "ocupacion_mediana": 0.1351351351351351,
+      "prob_umbral_b": 0.3714,
+      "no_show_base_mediana": 0.25177832417610213,
+      "no_show_medapp_mediana": 0.1076360217990574
+    },
+    {
+      "comparador": "C0",
+      "dc": "U(0; 0,40)",
+      "reduccion_mediana": 0.44291841662524234,
+      "reduccion_p05": 0.19248444253182698,
+      "reduccion_p95": 0.6247929831937831,
+      "prob_umbral_a": 0.6241,
+      "ocupacion_mediana": 0.1261554101385639,
+      "prob_umbral_b": 0.3072,
+      "no_show_base_mediana": 0.2517564788153024,
+      "no_show_medapp_mediana": 0.1397192838253163
+    },
+    {
+      "comparador": "C1",
+      "dc": 0.0,
+      "reduccion_mediana": 0.10053980692278558,
+      "reduccion_p05": -0.11566014661709088,
+      "reduccion_p95": 0.2910980234818335,
+      "prob_umbral_a": 0.0027,
+      "ocupacion_mediana": 0.02657667631783267,
+      "prob_umbral_b": 0.0002,
+      "no_show_base_mediana": 0.19226180584849145,
+      "no_show_medapp_mediana": 0.17135535204874985
+    },
+    {
+      "comparador": "C1",
+      "dc": 0.1,
+      "reduccion_mediana": 0.13461719957034896,
+      "reduccion_p05": -0.09345818547589776,
+      "reduccion_p95": 0.33144574086750195,
+      "prob_umbral_a": 0.0108,
+      "ocupacion_mediana": 0.02791996881902048,
+      "prob_umbral_b": 0.0003,
+      "no_show_base_mediana": 0.18272397862767553,
+      "no_show_medapp_mediana": 0.15674625402604678
+    },
+    {
+      "comparador": "C1",
+      "dc": 0.25,
+      "reduccion_mediana": 0.19308223911504419,
+      "reduccion_p05": -0.04453565012081225,
+      "reduccion_p95": 0.40047649466570096,
+      "prob_umbral_a": 0.0505,
+      "ocupacion_mediana": 0.029725004725004722,
+      "prob_umbral_b": 0.0001,
+      "no_show_base_mediana": 0.16646486708345853,
+      "no_show_medapp_mediana": 0.13346206348985248
+    },
+    {
+      "comparador": "C1",
+      "dc": 0.4,
+      "reduccion_mediana": 0.27307813245674306,
+      "reduccion_p05": 0.004693567093687636,
+      "reduccion_p95": 0.4844062811158438,
+      "prob_umbral_a": 0.1776,
+      "ocupacion_mediana": 0.03312777925582455,
+      "prob_umbral_b": 0.0006,
+      "no_show_base_mediana": 0.14987080103359174,
+      "no_show_medapp_mediana": 0.1074057893045541
+    },
+    {
+      "comparador": "C1",
+      "dc": "U(0; 0,40)",
+      "reduccion_mediana": 0.17001556967685644,
+      "reduccion_p05": -0.06939130012774924,
+      "reduccion_p95": 0.4018991262112,
+      "prob_umbral_a": 0.052,
+      "ocupacion_mediana": 0.0284919613277822,
+      "prob_umbral_b": 0.0001,
+      "no_show_base_mediana": 0.17243518439291522,
+      "no_show_medapp_mediana": 0.1407994107639321
+    }
+  ],
+  "incertidumbre_completa": {
+    "C0": {
+      "comparador": "C0",
+      "dc": "U(0; 0,40)",
+      "reduccion_mediana": 0.44291841662524234,
+      "reduccion_p05": 0.19248444253182698,
+      "reduccion_p95": 0.6247929831937831,
+      "prob_umbral_a": 0.6241,
+      "ocupacion_mediana": 0.1261554101385639,
+      "prob_umbral_b": 0.3072,
+      "no_show_base_mediana": 0.2517564788153024,
+      "no_show_medapp_mediana": 0.1397192838253163
+    },
+    "C1": {
+      "comparador": "C1",
+      "dc": "U(0; 0,40)",
+      "reduccion_mediana": 0.17001556967685644,
+      "reduccion_p05": -0.06939130012774924,
+      "reduccion_p95": 0.4018991262112,
+      "prob_umbral_a": 0.052,
+      "ocupacion_mediana": 0.0284919613277822,
+      "prob_umbral_b": 0.0001,
+      "no_show_base_mediana": 0.17243518439291522,
+      "no_show_medapp_mediana": 0.1407994107639321
+    }
+  }
+}

@@ -8,7 +8,17 @@ pip install -r requirements.txt
 python simulacion_medapp.py --escenarios 10000 --semilla 20260916
 ```
 
-Con esa semilla se reproducen exactamente las Tablas 20–22 y las Figuras 12–14.
+Con esa semilla se reproducen exactamente los resultados de la versión anterior del Capítulo 5.
+
+### Línea base simétrica y comparadores (segunda devolución, A2-04)
+
+```bash
+python simulacion_comparadores.py --escenarios 10000 --semilla 20260916
+```
+
+Admite avisos de cancelación en la línea base (c0), atribuye al canal solo el aviso
+incremental (Δc) y compara contra dos prácticas: no recordar (C0) y confirmar por
+teléfono (C1). Genera `comparadores.json`, `comparadores_grilla.csv` y `fig_comparadores.png`.
 Los resultados son **proyecciones condicionadas a los supuestos declarados** en el
 script (parámetros, distribución y fuente), no mediciones empíricas.
 
