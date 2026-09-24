@@ -136,7 +136,7 @@
             {
               "id": "tpl-idioma",
               "name": "plantilla_idioma",
-              "value": "es",
+              "value": "es_ES",
               "type": "string"
             }
           ]
@@ -328,7 +328,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  content: `Hola ${$('Variables Chatwoot').item.json.paciente_nombre} 👋 Te recordamos tu turno en MedAPP con ${$('Variables Chatwoot').item.json.profesional_nombre} (${$('Variables Chatwoot').item.json.especialidad}) el ${$('Variables Chatwoot').item.json.cuando}.\\nRespondé CONFIRMAR para confirmar, CANCELAR si no podés asistir o CAMBIAR si querés otro horario.`,\n  message_type: 'outgoing',\n  private: false,\n  template_params: {\n    name: $('Variables Chatwoot').item.json.plantilla,\n    category: 'UTILITY',\n    language: $('Variables Chatwoot').item.json.plantilla_idioma,\n    processed_params: {\n      '1': $('Variables Chatwoot').item.json.paciente_nombre,\n      '2': $('Variables Chatwoot').item.json.profesional_nombre,\n      '3': $('Variables Chatwoot').item.json.especialidad,\n      '4': $('Variables Chatwoot').item.json.cuando\n    }\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  content: `Hola ${$('Variables Chatwoot').item.json.paciente_nombre} 👋 Te recordamos tu turno en MedAPP con ${$('Variables Chatwoot').item.json.profesional_nombre} (${$('Variables Chatwoot').item.json.especialidad}) el ${$('Variables Chatwoot').item.json.cuando}.\\nRespondé CONFIRMAR para confirmar, CANCELAR si no podés asistir o CAMBIAR si querés otro horario.`,\n  message_type: 'outgoing',\n  private: false,\n  template_params: {\n    name: $('Variables Chatwoot').item.json.plantilla,\n    category: 'UTILITY',\n    language: $('Variables Chatwoot').item.json.plantilla_idioma,\n    processed_params: {\n      body: {\n        '1': $('Variables Chatwoot').item.json.paciente_nombre,\n        '2': $('Variables Chatwoot').item.json.profesional_nombre,\n        '3': $('Variables Chatwoot').item.json.especialidad,\n        '4': $('Variables Chatwoot').item.json.cuando\n      },\n      '1': $('Variables Chatwoot').item.json.paciente_nombre,\n      '2': $('Variables Chatwoot').item.json.profesional_nombre,\n      '3': $('Variables Chatwoot').item.json.especialidad,\n      '4': $('Variables Chatwoot').item.json.cuando\n    }\n  }\n}) }}",
         "options": {
           "response": {
             "response": {
