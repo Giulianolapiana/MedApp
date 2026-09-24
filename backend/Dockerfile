@@ -1,6 +1,6 @@
 # Backend MedApp · build desde la RAÍZ del monorepo:
 #   docker build -f backend/Dockerfile -t medapp-api .
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /repo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -11,7 +11,7 @@ RUN pnpm --filter backend build \
  && pnpm --filter backend deploy --prod /out \
  && cp -r backend/dist /out/dist
 
-FROM node:20-alpine
+FROM node:22-alpine
 ENV NODE_ENV=production PORT=3000 TZ=America/Argentina/Mendoza
 WORKDIR /app
 COPY --from=build /out ./
