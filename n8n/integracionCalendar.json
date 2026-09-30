@@ -98,7 +98,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ !!$('Webhook MedAPP').item.json.body.paciente_email }}",
+              "value1": "={{ !!($json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email) }}",
               "value2": true
             }
           ]
@@ -115,10 +115,10 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $('Webhook MedAPP').item.json.body.paciente_email }}",
-        "subject": "=Turno registrado · {{ $('Webhook MedAPP').item.json.body.cuando }}",
+        "sendTo": "={{ $json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email }}",
+        "subject": "=Turno registrado · {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }}",
         "emailType": "text",
-        "message": "=Hola {{ $('Webhook MedAPP').item.json.body.paciente }}:\n\nRegistramos tu turno con {{ $('Webhook MedAPP').item.json.body.profesional.nombre }} ({{ $('Webhook MedAPP').item.json.body.profesional.especialidad }}) para el {{ $('Webhook MedAPP').item.json.body.cuando }} (hora de Mendoza).\n\nEl día anterior te enviaremos un recordatorio por WhatsApp. Respondiendo ese mensaje vas a poder confirmar el turno, cancelarlo o pedir otro horario. Si ya sabés que no podés asistir, avisanos por WhatsApp así liberamos el horario para otro paciente.\n\nConsultorio Médico Los Andes\nPolítica de privacidad: https://turnos.verticedev.online/privacidad\n",
+        "message": "=Hola {{ $json.body?.paciente || $('Webhook MedAPP').first().json.body?.paciente }}:\n\nRegistramos tu turno con {{ $json.body?.profesional?.nombre || $('Webhook MedAPP').first().json.body?.profesional?.nombre }} ({{ $json.body?.profesional?.especialidad || $('Webhook MedAPP').first().json.body?.profesional?.especialidad }}) para el {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }} (hora de Mendoza).\n\nEl día anterior te enviaremos un recordatorio por WhatsApp. Respondiendo ese mensaje vas a poder confirmar el turno, cancelarlo o pedir otro horario. Si ya sabés que no podés asistir, avisanos por WhatsApp así liberamos el horario para otro paciente.\n\nConsultorio Médico Los Andes\nPolítica de privacidad: https://turnos.verticedev.online/privacidad\n",
         "options": {
           "appendAttribution": false
         }
@@ -227,7 +227,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ !!$('Webhook MedAPP').item.json.body.paciente_email }}",
+              "value1": "={{ !!($json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email) }}",
               "value2": true
             }
           ]
@@ -244,10 +244,10 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $('Webhook MedAPP').item.json.body.paciente_email }}",
-        "subject": "=Turno cancelado · {{ $('Webhook MedAPP').item.json.body.cuando }}",
+        "sendTo": "={{ $json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email }}",
+        "subject": "=Turno cancelado · {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }}",
         "emailType": "text",
-        "message": "=Hola {{ $('Webhook MedAPP').item.json.body.paciente }}:\n\nTu turno con {{ $('Webhook MedAPP').item.json.body.profesional.nombre }} del {{ $('Webhook MedAPP').item.json.body.cuando }} quedó cancelado.\n\nSi querés reservar otro horario, escribinos por WhatsApp o ingresá a https://turnos.verticedev.online.\n\nConsultorio Médico Los Andes\n",
+        "message": "=Hola {{ $json.body?.paciente || $('Webhook MedAPP').first().json.body?.paciente }}:\n\nTu turno con {{ $json.body?.profesional?.nombre || $('Webhook MedAPP').first().json.body?.profesional?.nombre }} del {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }} quedó cancelado.\n\nSi querés reservar otro horario, escribinos por WhatsApp o ingresá a https://turnos.verticedev.online.\n\nConsultorio Médico Los Andes\n",
         "options": {
           "appendAttribution": false
         }
