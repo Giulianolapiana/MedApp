@@ -8,17 +8,21 @@
             {
               "field": "cronExpression",
               "expression": "0 9 * * *"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 15 * * *"
             }
           ]
         }
       },
-      "id": "aea668c7-80e1-4b88-960b-e5fdcea80323",
-      "name": "Todos los días a las 09:00",
+      "id": "62cf97dc-a489-4bd5-9a71-d1c7d9bed625",
+      "name": "Todos los días a las 09:00 y 15:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -5664,
-        944
+        -6016,
+        624
       ]
     },
     {
@@ -28,13 +32,13 @@
         "genericAuthType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "7cc03caf-1b4c-4d18-bd11-0f8b6289a929",
+      "id": "48d95623-6042-4d8b-8229-1024d2091de4",
       "name": "Obtener Turnos de Mañana (MedAPP)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -5440,
-        944
+        -5792,
+        624
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -47,13 +51,13 @@
       "parameters": {
         "jsCode": "const items = $input.first().json.data || [];\nif (!items.length) {\n  return [];\n}\nreturn items.map(turno => ({ json: turno }));"
       },
-      "id": "68e650af-72a4-4798-8913-8f03fa71ae72",
+      "id": "fcae89d0-5ee9-4fd3-bf21-c20282e4b28b",
       "name": "Separar cada Turno",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5216,
-        944
+        -5568,
+        624
       ]
     },
     {
@@ -142,13 +146,13 @@
         },
         "options": {}
       },
-      "id": "e9c98d6e-9bf5-45c6-8887-463645f311a8",
+      "id": "1ef90006-8faa-46df-87bb-e6f742f1df5b",
       "name": "Variables Chatwoot",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -4992,
-        944
+        -5344,
+        624
       ]
     },
     {
@@ -168,13 +172,13 @@
           }
         }
       },
-      "id": "384d2fe8-93fb-4df0-841e-d63f17ee9c13",
+      "id": "aabc0577-b466-4726-bc4b-0936f4e39545",
       "name": "Crear Contacto (puede fallar)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4784,
-        944
+        -5136,
+        624
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -196,13 +200,13 @@
           }
         }
       },
-      "id": "830ec105-8226-4a7e-9c88-45417b90c022",
+      "id": "4b4279fd-3a91-4cd1-a03f-88d3d4c5b6bb",
       "name": "Buscar Contacto por Teléfono",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4560,
-        944
+        -4912,
+        624
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -215,13 +219,13 @@
       "parameters": {
         "jsCode": "return $input.all().map((item, index) => {\n  const searchResults = item.json.payload || [];\n  const phone = '+' + $('Variables Chatwoot').itemMatching(index).json.paciente_telefono.replace('+', '').replace(/\\s+/g, '');\n  const match = searchResults.find(c => c.phone_number === phone);\n  return {\n    json: { contact_id: match ? match.id : 0 },\n    pairedItem: { item: index }\n  };\n});"
       },
-      "id": "bb2efc39-e27a-450f-86c6-288c960e4ca5",
+      "id": "8a18823b-b18e-4fa0-87bf-f1dab191c816",
       "name": "Extraer Contact ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4336,
-        944
+        -4688,
+        624
       ]
     },
     {
@@ -237,13 +241,13 @@
           }
         }
       },
-      "id": "6078b81b-0be3-44ea-b355-80959e618378",
+      "id": "655150e0-f349-4d2b-baca-f5d7fa599ec6",
       "name": "Buscar Conversaciones",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4096,
-        944
+        -4448,
+        624
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -256,13 +260,13 @@
       "parameters": {
         "jsCode": "return $input.all().map((item, index) => {\n  const payload = item.json.payload || [];\n  const inboxId = parseInt($('Variables Chatwoot').itemMatching(index).json.inboxId);\n  const contactId = $('Extraer Contact ID').itemMatching(index).json.contact_id;\n\n  const existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\n  if (existing) {\n    return { \n      json: { id: existing.id, reused: true, contact_id: contactId },\n      pairedItem: { item: index }\n    };\n  }\n  return { \n    json: { id: null, reused: false, contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
       },
-      "id": "3a5c908e-c4eb-4082-a66c-efb5cc03240b",
+      "id": "e9529eb0-c869-4b94-a5d1-6405799cba55",
       "name": "Resolver Conversación",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4608,
-        1312
+        -4960,
+        992
       ]
     },
     {
@@ -276,13 +280,13 @@
           ]
         }
       },
-      "id": "42310cfa-f704-403d-bbba-692659b73e6b",
+      "id": "c0eec3a5-8159-48e2-b5c0-8a2d88a3c0f2",
       "name": "¿Conv Existente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        -4400,
-        1312
+        -4752,
+        992
       ]
     },
     {
@@ -302,13 +306,13 @@
           }
         }
       },
-      "id": "c9769182-50c1-4a52-9de1-bf16711542a4",
+      "id": "7cce104f-ac31-48f7-84c1-4fd90000656f",
       "name": "Crear Conversación",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4176,
-        1504
+        -4528,
+        1184
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -334,13 +338,13 @@
           }
         }
       },
-      "id": "45421d20-d5e7-4451-bc74-3e2d553c1d83",
+      "id": "f6960d28-df34-4e5f-8221-42d6d5a59675",
       "name": "Enviar WhatsApp Recordatorio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3952,
-        1312
+        -4304,
+        992
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -360,13 +364,13 @@
         "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.id), estado: 'enviado' }) }}",
         "options": {}
       },
-      "id": "e88a07a6-b0ac-4eaa-8e07-784d2e2c6d4e",
+      "id": "4aa20bf3-a665-4383-8cf7-a7eaf77138c7",
       "name": "Registrar Envío en MedApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3520,
-        1200
+        -3872,
+        880
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -386,13 +390,13 @@
           ]
         }
       },
-      "id": "ae68aaa0-c773-4d37-b17d-28c30d3433e7",
+      "id": "f9a359b3-fc21-40da-8350-ac6e728826fe",
       "name": "¿Chatwoot aceptó el envío?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        -3728,
-        1312
+        -4080,
+        992
       ]
     },
     {
@@ -406,13 +410,13 @@
         "jsonBody": "={{ JSON.stringify({ estado: 'fallido', detalle: String($json.error?.message || $json.message || 'envío rechazado').slice(0, 500) }) }}",
         "options": {}
       },
-      "id": "137627eb-2a5e-4bcb-9c0d-7ed2bf4cf3a4",
+      "id": "662eaf59-3706-42c9-8b7d-0c3f8ff5f161",
       "name": "Registrar fallo (permite reintento)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3520,
-        1408
+        -3872,
+        1088
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -424,17 +428,6 @@
   ],
   "pinData": {},
   "connections": {
-    "Todos los días a las 09:00": {
-      "main": [
-        [
-          {
-            "node": "Obtener Turnos de Mañana (MedAPP)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Obtener Turnos de Mañana (MedAPP)": {
       "main": [
         [
@@ -580,6 +573,17 @@
           }
         ]
       ]
+    },
+    "Todos los días a las 09:00 y 15:00": {
+      "main": [
+        [
+          {
+            "node": "Obtener Turnos de Mañana (MedAPP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -587,7 +591,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "ea95e41d-e65c-412a-9445-9907909240b8",
+  "versionId": "50251f97-bac4-45e5-aa9e-5ad8f3ceb5ff",
   "meta": {
     "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
   },

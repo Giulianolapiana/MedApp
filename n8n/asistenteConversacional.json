@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        672,
-        544
+        2784,
+        1664
       ],
-      "id": "77bdb267-2cea-4c93-b474-7464e024b293",
+      "id": "4b2246c2-a45c-4128-a116-5649abec71df",
       "name": "Webhook",
       "webhookId": "b1967d50-b09a-4eac-9247-de313c0f2921"
     },
@@ -55,10 +55,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        896,
-        544
+        3008,
+        1664
       ],
-      "id": "6dd715a8-1feb-482d-8afd-e7b08fe68200",
+      "id": "4d814ab5-7a7e-4198-bfd2-f71faa1e7710",
       "name": "If"
     },
     {
@@ -126,10 +126,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.5,
       "position": [
-        2224,
-        544
+        4336,
+        1664
       ],
-      "id": "3235a827-f09b-48d7-8898-618607315c52",
+      "id": "5db0d273-2a8c-421f-b878-c9d45e603dd6",
       "name": "Edit Fields"
     },
     {
@@ -137,16 +137,16 @@
         "promptType": "define",
         "text": "=Fecha y hora actual en Mendoza: {{ $now.setZone('America/Argentina/Mendoza').toFormat('yyyy-MM-dd HH:mm') }} ({{ $now.setZone('America/Argentina/Mendoza').setLocale('es').toFormat('EEEE d \\'de\\' MMMM \\'de\\' yyyy') }})\nMensaje del paciente: {{ $json.contenido }}\nNombre del paciente: {{ $json.usuario }}",
         "options": {
-          "systemMessage": "Sos Alfredo, el asistente virtual de MedAPP 🏥. Ayudás a pacientes a reservar turnos médicos por WhatsApp de forma simple y amigable.\n\n## Tu Personalidad\n- Sos cordial, profesional y eficiente\n- Usás SIEMPRE español rioplatense con voseo (vos, tenés, querés, podés). Nunca uses \"tú\" ni \"tienes\"\n- Sos conciso: no escribís párrafos largos por WhatsApp\n- Usás emojis con moderación (👋, ✅, 📅, ⏰, 👨‍⚕️)\n\n## Flujo de Reserva de Turno\nSeguí estos pasos EN ORDEN:\n\n1. **Saludo**: Si es la primera interacción, saludá y preguntá en qué podés ayudar\n2. **Listar profesionales**: Cuando pida un turno, usá la herramienta `listar_profesionales` para mostrar los médicos disponibles con su especialidad. Mostrá la lista de forma compacta (nombre - especialidad)\n3. **Consultar días**: Cuando elija un profesional, usá `ver_dias_disponibles` para mostrarle qué días de la semana atiende. Traducí los números: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado\n4. **Consultar horarios**: Cuando elija una fecha (formato YYYY-MM-DD), usá `ver_horarios_disponibles` para mostrar los slots libres. Mostrá solo los horarios, no el JSON crudo\n5. **Confirmar datos**: Antes de reservar, mostrá un resumen y pedí confirmación:\n   - 👨‍⚕️ Profesional: [nombre]\n   - 📅 Fecha: [fecha legible]\n   - ⏰ Hora: [hora]\n   - 👤 Paciente: [nombre]\n6. **Reservar**: Cuando confirme, usá `reservar_turno` para crear el turno\n\n## Datos del Paciente\n- El nombre del paciente ya lo tenés del contexto del mensaje (campo 'Nombre del paciente')\n- El teléfono lo agrega el sistema en las herramientas; nunca lo pidas ni lo escribas\n- NO le pidas estos datos al paciente si ya los tenés\n\n## Confirmar, cancelar o reprogramar un turno\n- Si el paciente responde a un recordatorio o pide ver/confirmar/cancelar/cambiar un turno, usá `mis_turnos` para ver SUS turnos activos (la herramienta ya usa el teléfono del remitente).\n- Si tiene más de un turno, preguntá a cuál se refiere antes de actuar.\n- CONFIRMAR: usá `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del ...?\") y recién después usá `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: es cancelar el turno actual y reservar uno nuevo. Primero buscá y mostrá horarios libres; cuando el paciente elija, cancelá el anterior con `responder_turno` y reservá el nuevo con `reservar_turno`. Si la reserva nueva falla, avisale que el turno anterior quedó cancelado y ofrecé otro horario.\n- Nunca digas que una acción se hizo si la herramienta devolvió error.\n\n## Datos personales (Ley 25.326)\n- En la primera interacción informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en https://medapp.example/privacidad.\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta.\n\n## Reglas IMPORTANTES\n- NUNCA inventes información. Solo usá datos que devuelvan las herramientas\n- La fecha y hora actual en Mendoza se indica SIEMPRE al inicio del mensaje. Tomala como referencia absoluta para el año, mes y día de la semana. Estamos en el año 2026. NUNCA uses años pasados (como 2023 o 2024)\n- Todo turno debe ser a futuro respecto al momento actual. Para el día de hoy, solo podés reservar horarios posteriores a la hora actual\n- Al calcular fechas a partir de días de atención (ej: si atiende los jueves), calculá el próximo jueves futuro a partir de la fecha actual\n- Si no hay turnos disponibles en una fecha, sugerí otra fecha cercana\n- Las fechas siempre en formato YYYY-MM-DD para las herramientas. Todas las horas son hora de Mendoza\n- Para reservar, fecha_hora_inicio debe ser formato ISO: YYYY-MM-DDTHH:mm:00\n- El canal_reserva siempre es \"whatsapp\"\n- Si pregunta algo que no sea sobre turnos médicos, respondé amablemente que solo podés ayudar con la gestión de turnos\n- Cuando muestres profesionales, NO muestres los IDs técnicos (UUIDs). Usá números (1, 2, 3) y mapeá internamente"
+          "systemMessage": "Sos Alfredo, el asistente virtual de MedAPP 🏥. Ayudás a pacientes a reservar turnos médicos por WhatsApp de forma simple y amigable.\n\n## Tu Personalidad\n- Sos cordial, profesional y eficiente\n- Usás SIEMPRE español rioplatense con voseo (vos, tenés, querés, podés). Nunca uses \"tú\" ni \"tienes\"\n- Sos conciso: no escribís párrafos largos por WhatsApp\n- Usás emojis con moderación (👋, ✅, 📅, ⏰, 👨‍⚕️)\n\n## Flujo de Reserva de Turno\nSeguí estos pasos EN ORDEN:\n\n1. **Saludo**: Si es la primera interacción, saludá y preguntá en qué podés ayudar\n2. **Listar profesionales**: Cuando pida un turno, usá la herramienta `listar_profesionales` para mostrar los médicos disponibles con su especialidad. Mostrá la lista de forma compacta (nombre - especialidad)\n3. **Consultar días**: Cuando elija un profesional, usá `ver_dias_disponibles` para mostrarle qué días de la semana atiende. Traducí los números: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado\n4. **Consultar horarios**: Cuando elija una fecha (formato YYYY-MM-DD), usá `ver_horarios_disponibles` para mostrar los slots libres. Mostrá solo los horarios, no el JSON crudo\n5. **Confirmar datos**: Antes de reservar, mostrá un resumen y pedí confirmación:\n   - 👨‍⚕️ Profesional: [nombre]\n   - 📅 Fecha: [fecha legible]\n   - ⏰ Hora: [hora]\n   - 👤 Paciente: [nombre]\n6. **Reservar**: Cuando confirme, usá `reservar_turno` para crear el turno\n\n## Datos del Paciente\n- El nombre del paciente ya lo tenés del contexto del mensaje (campo 'Nombre del paciente')\n- El teléfono lo agrega el sistema en las herramientas; nunca lo pidas ni lo escribas\n- NO le pidas estos datos al paciente si ya los tenés\n\n## Confirmar, cancelar o reprogramar un turno\n- Si el paciente responde a un recordatorio o pide ver/confirmar/cancelar/cambiar un turno, usá `mis_turnos` para ver SUS turnos activos (la herramienta ya usa el teléfono del remitente).\n- Si tiene más de un turno, preguntá a cuál se refiere antes de actuar.\n- CONFIRMAR: usá `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del ...?\") y recién después usá `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: primero reservá el turno nuevo y recién después cancelá el anterior, para que el paciente nunca se quede sin turno. Buscá y mostrá horarios libres; cuando el paciente elija, reservá el nuevo con `reservar_turno`. Si la reserva sale bien, cancelá el anterior con `responder_turno` (accion \"cancelado\") y confirmale ambos cambios. Si la reserva falla, el turno anterior sigue vigente: decíselo y ofrecé otro horario.\n- Nunca digas que una acción se hizo si la herramienta devolvió error.\n\n## Datos personales (Ley 25.326)\n- En la primera interacción informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en https://turnos.verticedev.online/privacidad.\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta.\n\n## Reglas IMPORTANTES\n- NUNCA inventes información. Solo usá datos que devuelvan las herramientas\n- La fecha y hora actual en Mendoza se indica SIEMPRE al inicio del mensaje. Tomala como referencia absoluta para el año, mes y día de la semana. Estamos en el año 2026. NUNCA uses años pasados (como 2023 o 2024)\n- Todo turno debe ser a futuro respecto al momento actual. Para el día de hoy, solo podés reservar horarios posteriores a la hora actual\n- Al calcular fechas a partir de días de atención (ej: si atiende los jueves), calculá el próximo jueves futuro a partir de la fecha actual\n- Si no hay turnos disponibles en una fecha, sugerí otra fecha cercana\n- Las fechas siempre en formato YYYY-MM-DD para las herramientas. Todas las horas son hora de Mendoza\n- Para reservar, fecha_hora_inicio debe ser formato ISO: YYYY-MM-DDTHH:mm:00\n- El canal_reserva siempre es \"whatsapp\"\n- Si pregunta algo que no sea sobre turnos médicos, respondé amablemente que solo podés ayudar con la gestión de turnos\n- Cuando muestres profesionales, NO muestres los IDs técnicos (UUIDs). Usá números (1, 2, 3) y mapeá internamente"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        1728,
-        944
+        3840,
+        2064
       ],
-      "id": "fccdf989-eec4-4059-aa8c-7ad4e1698848",
+      "id": "38ab1924-d73c-4c70-8363-8a4aef282a2a",
       "name": "AI Agent"
     },
     {
@@ -161,10 +161,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        1344,
-        1056
+        3456,
+        2176
       ],
-      "id": "bcce583b-6a67-4479-8e20-ff8ba584bd98",
+      "id": "5681121f-7ed0-450f-b995-3c222530f48f",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -182,10 +182,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
       "position": [
-        1344,
-        896
+        3456,
+        2016
       ],
-      "id": "8b8efaf6-38ec-4b20-a855-801ee1e88e7d",
+      "id": "3f27a11c-78ce-484e-b1c4-d20320afc220",
       "name": "Simple Memory"
     },
     {
@@ -202,10 +202,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        2096,
-        944
+        4208,
+        2064
       ],
-      "id": "232dc694-a60b-49b3-921e-20fdf6e60ca7",
+      "id": "532d1fa4-b296-41eb-baf8-93df7418b8ba",
       "name": "Respuesta",
       "credentials": {
         "httpHeaderAuth": {
@@ -225,10 +225,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        1360,
-        1328
+        3472,
+        2448
       ],
-      "id": "2b7bb9e7-92ea-4810-ba24-1d3d395412cf",
+      "id": "2df0e48d-3bb9-438a-a914-741eae4ed039",
       "name": "listar_profesionales",
       "credentials": {
         "httpHeaderAuth": {
@@ -248,10 +248,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        1520,
-        1264
+        3632,
+        2384
       ],
-      "id": "8648831f-0350-4d61-a4cc-5a4f3f8c25c5",
+      "id": "013823ee-8a14-4ca4-8eda-0a71b41ff646",
       "name": "ver_dias_disponibles",
       "credentials": {
         "httpHeaderAuth": {
@@ -271,10 +271,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        1696,
-        1232
+        3808,
+        2352
       ],
-      "id": "a9211cc0-7c07-49b3-86ea-396c673f954e",
+      "id": "b8ab6081-0371-4a8d-8ae7-52559960da45",
       "name": "ver_horarios_disponibles",
       "credentials": {
         "httpHeaderAuth": {
@@ -298,10 +298,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        1856,
-        1248
+        3968,
+        2368
       ],
-      "id": "7ed35332-9d0d-4209-b88a-03b942d21eeb",
+      "id": "7e5b6601-6cca-4b2f-975c-e9efc9129acc",
       "name": "reservar_turno",
       "credentials": {
         "httpHeaderAuth": {
@@ -321,10 +321,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        2080,
-        1296
+        4192,
+        2416
       ],
-      "id": "346c0f4b-69e5-46ff-b4f9-6f849c17a402",
+      "id": "703340d1-04cb-4e18-950c-f5e00643ddee",
       "name": "mis_turnos",
       "credentials": {
         "httpHeaderAuth": {
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        2224,
-        1312
+        4336,
+        2432
       ],
-      "id": "a2846e15-49c5-447f-ae75-fb92a142e2db",
+      "id": "e6c1a1fd-a2ba-4754-930c-9ba9cd1f3ee3",
       "name": "responder_turno",
       "credentials": {
         "httpHeaderAuth": {
@@ -398,13 +398,13 @@
         },
         "options": {}
       },
-      "id": "0d45c1f1-fc6b-4649-8c27-cbec078c33b9",
+      "id": "ee60f9ef-e5e0-435c-88a6-b92f75ac1ab5",
       "name": "Configuración",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1120,
-        544
+        3232,
+        1664
       ]
     },
     {
@@ -420,13 +420,13 @@
           }
         }
       },
-      "id": "942b4181-c064-4358-ada3-ebefb425ca23",
+      "id": "3bbb1bc4-8433-4945-8900-c1017acfb790",
       "name": "Chatwoot: conversación",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1344,
-        544
+        3456,
+        1664
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -448,13 +448,13 @@
           }
         }
       },
-      "id": "92bc1cfc-45d9-4a03-8d1e-4ac761737b6e",
+      "id": "044edcee-9d24-4cc0-bed7-edbf762c3e7f",
       "name": "Chatwoot: mensajes",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1552,
-        544
+        3664,
+        1664
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -467,13 +467,13 @@
       "parameters": {
         "jsCode": "// A2-03: el webhook no se toma como fuente de verdad. Cada evento se confirma\n// consultando a Chatwoot con credenciales propias: el mensaje debe existir en esa\n// conversación, ser entrante, coincidir en contenido y pertenecer a la bandeja\n// configurada. El teléfono se toma de Chatwoot, no del cuerpo del webhook.\nconst body = $('Webhook').first().json.body || {};\nconst cfg = $('Configuración').first().json;\nconst conv = $('Chatwoot: conversación').first().json || {};\nconst msgs = ($('Chatwoot: mensajes').first().json || {}).payload || [];\nconst m = msgs.find(x => String(x.id) === String(body.id));\nconst telefono = conv?.meta?.sender?.phone_number || '';\nconst valido = !!m && m.message_type === 0 && (m.content || '') === (body.content || '')\n  && Number(conv.inbox_id) === Number(cfg.inboxId) && !!telefono;\nreturn [{ json: { valido, telefono, contenido: m ? m.content : '', usuario: conv?.meta?.sender?.name || '',\n  conversacion_id: conv.id, motivo: valido ? 'ok' : 'evento no verificado en Chatwoot' } }];"
       },
-      "id": "1ffc214f-dbf2-45bc-87a5-60a901610d24",
+      "id": "cd3f445e-cfa4-4206-8ebe-6678d6f0c2ba",
       "name": "¿Mensaje auténtico?",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1776,
-        544
+        3888,
+        1664
       ]
     },
     {
@@ -487,13 +487,13 @@
           ]
         }
       },
-      "id": "97b9edc7-f1a7-40a3-af74-367fff2f398a",
+      "id": "651b4026-6696-429b-93c9-c5b0af2f5cb2",
       "name": "¿Verificado?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        2000,
-        544
+        4112,
+        1664
       ]
     },
     {
@@ -507,24 +507,24 @@
           ]
         }
       },
-      "id": "bb0af793-3694-4293-9c08-131840feacac",
+      "id": "eb9fbb00-ccc8-4aa3-8c93-37c4415144fc",
       "name": "¿Estado de entrega?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        896,
-        800
+        3008,
+        1920
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.verticedev.online/api/v1/turnos/recordatorios/estado",
+        "url": "={{ $('Configuración (estado)').item.json.apiUrl }}/turnos/recordatorios/estado",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.body.id), estado: ({ sent: 'enviado', delivered: 'entregado', read: 'leido', failed: 'fallido' })[$json.body.status], detalle: $json.body.content_attributes?.external_error || undefined }) }}",
+        "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: $json.mensaje_externo_id, estado: $json.estado, detalle: $json.detalle || undefined }) }}",
         "options": {
           "response": {
             "response": {
@@ -533,13 +533,13 @@
           }
         }
       },
-      "id": "72b93f5a-2b73-44c2-83dc-d9d26c3ea82f",
+      "id": "62e21cde-b64c-4cfe-8b62-f7bbbc9abcb0",
       "name": "Registrar estado de entrega",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        848,
-        1008
+        4352,
+        2128
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -547,6 +547,142 @@
           "name": "MedApp API"
         }
       }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "serverUrl",
+              "value": "https://chatwoot.verticedev.online",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "accountId",
+              "value": "3",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "inboxId",
+              "value": "6",
+              "type": "string"
+            },
+            {
+              "id": "c4",
+              "name": "apiUrl",
+              "value": "https://api.verticedev.online/api/v1",
+              "type": "string"
+            },
+            {
+              "id": "c5",
+              "name": "clinicaId",
+              "value": "9569ad65-a5fd-4692-9804-be6ae60fad76",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d120da02-979f-4d35-886e-6d244534220a",
+      "name": "Configuración (estado)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3232,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.serverUrl }}/api/v1/accounts/{{ $json.accountId }}/conversations/{{ $('Webhook').item.json.body.conversation.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "887aaac5-8045-4dd3-a46c-79bf157b576b",
+      "name": "Chatwoot: conversación (estado)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3456,
+        2128
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuración (estado)').item.json.serverUrl }}/api/v1/accounts/{{ $('Configuración (estado)').item.json.accountId }}/conversations/{{ $('Webhook').item.json.body.conversation.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "c900df2f-34ec-40e7-b5b1-b8421351f3a9",
+      "name": "Chatwoot: mensajes (estado)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3680,
+        2128
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// M3-01: el estado de entrega tampoco se toma del webhook. Se confirma en Chatwoot\n// que el mensaje exista en esa conversación, sea saliente (message_type 1) y pertenezca\n// a la bandeja del consultorio; el estado que se registra es el que informa Chatwoot.\nconst body = $('Webhook').first().json.body || {};\nconst cfg = $('Configuración (estado)').first().json;\nconst conv = $('Chatwoot: conversación (estado)').first().json || {};\nconst msgs = ($('Chatwoot: mensajes (estado)').first().json || {}).payload || [];\nconst m = msgs.find(x => String(x.id) === String(body.id));\nconst mapa = { sent: 'enviado', delivered: 'entregado', read: 'leido', failed: 'fallido' };\nconst valido = !!m && m.message_type === 1 && Number(conv.inbox_id) === Number(cfg.inboxId) && !!mapa[m.status];\nreturn [{ json: { valido, mensaje_externo_id: m ? String(m.id) : null, estado: m ? mapa[m.status] : null,\n  detalle: m?.content_attributes?.external_error || null, motivo: valido ? 'ok' : 'estado no verificado en Chatwoot' } }];"
+      },
+      "name": "¿Estado auténtico?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3904,
+        2128
+      ],
+      "id": "26519c5f-8437-4090-ba15-eb8cf2153c98"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valido }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "57b9ad16-efdc-4716-b74a-845f6452c0aa",
+      "name": "¿Estado verificado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4128,
+        2128
+      ]
     }
   ],
   "pinData": {},
@@ -747,6 +883,61 @@
       "main": [
         [
           {
+            "node": "Configuración (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración (estado)": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot: conversación (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot: conversación (estado)": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot: mensajes (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot: mensajes (estado)": {
+      "main": [
+        [
+          {
+            "node": "¿Estado auténtico?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Estado auténtico?": {
+      "main": [
+        [
+          {
+            "node": "¿Estado verificado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Estado verificado?": {
+      "main": [
+        [
+          {
             "node": "Registrar estado de entrega",
             "type": "main",
             "index": 0
@@ -760,7 +951,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "356837c7-c309-42cb-a92f-73d19d1bcff2",
+  "versionId": "a0f8a7fe-d03a-4098-b444-a5113236a1cd",
   "meta": {
     "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
   },
