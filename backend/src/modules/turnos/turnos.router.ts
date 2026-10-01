@@ -147,7 +147,8 @@ turnosRouter.get('/:id', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCIO
 // GET /api/v1/turnos/:id/historial — ADMIN
 turnosRouter.get('/:id/historial', authMiddleware, requireRole(['ADMINISTRADOR']), async (c) => {
   const id = c.req.param('id')!;
-  const historial = await turnosService.obtenerHistorial(id);
+  const user = c.get('user' as never) as AuthUser;
+  const historial = await turnosService.obtenerHistorial(id, user.clinica_id);
   return c.json({ data: historial });
 });
 

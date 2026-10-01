@@ -18,3 +18,12 @@ describe('Limitador de reservas (A2-02)', () => {
     expect(registrarIntento(clave, 1000 + 3_600_000, 3)).toBe(true);
   });
 });
+
+describe('Limitador del inicio de sesión (M3-02)', () => {
+  it('usa su propia ventana de 15 minutos y no comparte el contador con las reservas', () => {
+    const ip = `login:${Math.random()}`;
+    for (let i = 0; i < 10; i++) expect(registrarIntento(ip, 0, 10, 15 * 60 * 1000)).toBe(true);
+    expect(registrarIntento(ip, 0, 10, 15 * 60 * 1000)).toBe(false);
+    expect(registrarIntento(ip, 15 * 60 * 1000, 10, 15 * 60 * 1000)).toBe(true);
+  });
+});

@@ -27,9 +27,9 @@ export function ipDelCliente(xff: string | undefined, remota: string | undefined
   return remota ?? 'desconocida';
 }
 
-export function registrarIntento(clave: string, ahora = Date.now(), max = MAX_REQUESTS): boolean {
+export function registrarIntento(clave: string, ahora = Date.now(), max = MAX_REQUESTS, ventanaMs = WINDOW_MS): boolean {
   const r = store.get(clave);
-  if (!r || ahora - r.timestamp >= WINDOW_MS) {
+  if (!r || ahora - r.timestamp >= ventanaMs) {
     store.set(clave, { count: 1, timestamp: ahora });
   } else if (r.count >= max) {
     return false;
@@ -37,17 +37,35 @@ export function registrarIntento(clave: string, ahora = Date.now(), max = MAX_RE
     r.count++;
   }
   if (store.size > 10_000) {
-    for (const [k, v] of store) if (ahora - v.timestamp >= WINDOW_MS) store.delete(k);
+    for (const [k, v] of store) if (ahora - v.timestamp >= Math.max(ventanaMs, WINDOW_MS)) store.delete(k);
   }
   return true;
 }
 
-export const rateLimiterMiddleware = async (c: Context, next: Next) => {
-  let remota: string | undefined;
-  try { remota = getConnInfo(c).remote.address; } catch { remota = undefined; }
-  const ip = ipDelCliente(c.req.header('x-forwarded-for'), remota);
-  if (!registrarIntento(`ip:${ip}`)) {
-    return c.json({ detail: 'Se alcanzó el límite de reservas. Intentá más tarde.', code: 'TOO_MANY_REQUESTS' }, 429);
-  }
-  await next();
-};
+/**
+ * Limitador por IP del cliente, con la IP tomada del proxy de confianza.
+ * Se usa para las reservas públicas y para el inicio de sesión (M3-02).
+ */
+export function limitePorIp(opciones: { prefijo: string; max: number; ventanaMs: number; mensaje: string }) {
+  return async (c: Context, next: Next) => {
+    let remota: string | undefined;
+    try { remota = getConnInfo(c).remote.address; } catch { remota = undefined; }
+    const ip = ipDelCliente(c.req.header('x-forwarded-for'), remota);
+    if (!registrarIntento(`${opciones.prefijo}:${ip}`, Date.now(), opciones.max, opciones.ventanaMs)) {
+      return c.json({ detail: opciones.mensaje, code: 'TOO_MANY_REQUESTS' }, 429);
+    }
+    await next();
+  };
+}
+
+/** Reservas públicas: 20 por hora y por IP (A2-02). */
+export const rateLimiterMiddleware = limitePorIp({
+  prefijo: 'ip', max: MAX_REQUESTS, ventanaMs: WINDOW_MS,
+  mensaje: 'Se alcanzó el límite de reservas. Intentá más tarde.',
+});
+
+/** Inicio de sesión: 10 intentos cada 15 minutos por IP (M3-02). */
+export const limiteLogin = limitePorIp({
+  prefijo: 'login', max: 10, ventanaMs: 15 * 60 * 1000,
+  mensaje: 'Demasiados intentos de inicio de sesión. Intentá más tarde.',
+});

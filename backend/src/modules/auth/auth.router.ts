@@ -3,12 +3,12 @@ import { authService } from './auth.service.js';
 import { LoginRequest, RefreshRequest } from './auth.schemas.js';
 import { ValidationError } from '../../core/errors.js';
 import { authMiddleware, AuthUser } from '../../middleware/auth.middleware.js';
-import { rateLimiter } from '../../middleware/rate-limit.js';
+import { limiteLogin } from '../../middleware/rate-limiter.middleware.js';
 
 const auth = new Hono();
 
-// Rate limit en login: 10 intentos cada 15 minutos
-auth.post('/login', rateLimiter({ windowMs: 15 * 60 * 1000, max: 10 }), async (c) => {
+// Límite de login: 10 intentos cada 15 minutos por IP del cliente (M3-02)
+auth.post('/login', limiteLogin, async (c) => {
   const body = await c.req.json();
   const parsed = LoginRequest.safeParse(body);
 

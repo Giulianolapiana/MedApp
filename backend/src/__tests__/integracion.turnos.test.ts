@@ -32,7 +32,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     await db.execute(sql`ALTER TABLE historial_turnos ENABLE TRIGGER trg_historial_inmutable`);
     const [c] = await db.insert(schema.clinicas).values({ nombre: 'Consultorio de prueba' }).returning();
     const [p] = await db.insert(schema.profesionales).values({ nombre: 'Dra. Prueba', especialidad: 'Clínica', clinica_id: c.id }).returning();
-    await db.insert(schema.disponibilidad).values({ profesional_id: p.id, clinica_id: c.id, dia_semana: 1, horario_inicio: '09:00', horario_fin: '12:00' });
+    await db.insert(schema.disponibilidad).values({ profesional_id: p.id, clinica_id: c.id, dia_semana: 1, horario_inicio: '09:00', horario_fin: '18:00' });
     clinicaId = c.id; profesionalId = p.id;
   });
 
@@ -146,5 +146,37 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     const filas = await turnosService.tablero(clinicaId, 30); // la fecha de prueba está a más de 14 días
     expect(filas.length).toBeGreaterThan(0);
     expect(filas.some((f: any) => f.hora === '10:00')).toBe(true);
+  });
+  it('A3-01 (T1): rechaza una reserva web en un día y horario que el profesional no atiende', async () => {
+    const domingo = new Date(base.getTime() - 86400000).toISOString().slice(0, 10);
+    await expect(turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${domingo}T03:17:00`, consentimiento_privacidad: true, paciente: paciente(71) }, clinicaId))
+      .rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('A3-01 (T2): rechaza una reserva por WhatsApp fuera de la grilla de 30 minutos', async () => {
+    await expect(turnosService.crearWhatsapp({ clinica_id: clinicaId, profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T10:07:00`, nombre_completo: 'Hora Rara', telefono: '2614111111' }))
+      .rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('A3-01 (T3): rechaza una reserva con un profesional dado de baja y no le ofrece horarios', async () => {
+    const [baja] = await db.insert(schema.profesionales).values({ nombre: 'Dr. Baja', especialidad: 'Clínica', clinica_id: clinicaId, activo: false }).returning();
+    await db.insert(schema.disponibilidad).values({ profesional_id: baja.id, clinica_id: clinicaId, dia_semana: 1, horario_inicio: '09:00', horario_fin: '12:00' });
+    await expect(turnosService.crearPublico({ profesional_id: baja.id, fecha_hora_inicio: `${fecha}T09:00:00`, consentimiento_privacidad: true, paciente: paciente(72) }, clinicaId))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(await disponibilidadService.generarSlots(baja.id, clinicaId, fecha)).toHaveLength(0);
+  });
+
+  it('A3-01 (T4): rechaza una reserva con un profesional de otra clínica', async () => {
+    const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica B' }).returning();
+    await expect(turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:00:00`, consentimiento_privacidad: true, paciente: paciente(73) }, otra.id))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(await disponibilidadService.generarSlots(profesionalId, otra.id, fecha)).toHaveLength(0);
+  });
+
+  it('B3-01: el historial de un turno no se entrega a otra clínica', async () => {
+    const [t] = await db.select().from(schema.turnos).limit(1);
+    const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica C' }).returning();
+    await expect(turnosService.obtenerHistorial(t.id, otra.id)).rejects.toMatchObject({ statusCode: 404 });
+    expect((await turnosService.obtenerHistorial(t.id, clinicaId)).length).toBeGreaterThan(0);
   });
 });

@@ -10,6 +10,7 @@ import { n8nService } from './n8n.service.js';
 import { logger } from '../../core/logger.js';
 import { traducirErrorPg } from '../../core/pg-errors.js';
 import { normalizarTelefonoAR } from '../../core/telefono.js';
+import { disponibilidadService } from '../disponibilidad/disponibilidad.service.js';
 import {
   normalizarAUtc, partesLocales, formatoParaPaciente, rangoDiaLocal,
   fechaLocalManana, sumarMinutos, DURACION_TURNO_MINUTOS,
@@ -64,8 +65,30 @@ export class TurnosService {
     return filas.reduce((acc, f) => acc + Math.max(0, Math.floor((aMin(f.horario_fin) - aMin(f.horario_inicio)) / DURACION_TURNO_MINUTOS)), 0);
   }
 
-  async obtenerHistorial(turnoId: string) {
+  /** Historial de un turno de la clínica del usuario (B3-01): un turno de otra clínica responde 404. */
+  async obtenerHistorial(turnoId: string, clinicaId: string) {
+    const turno = await this.repo.getById(turnoId, clinicaId);
+    if (!turno) throw new NotFoundError('Turno no encontrado');
     return this.historialRepo.listByTurno(turnoId);
+  }
+
+  /**
+   * Regla RN-06 (A3-01): el turno debe caer en un horario ofrecido.
+   * - El profesional existe, está activo y pertenece a la clínica de la reserva.
+   * - El inicio coincide con un horario devuelto por generarSlots, la misma función
+   *   que alimenta /disponibilidad/{id}/slots (día, franja y grilla de 30 minutos).
+   * La ocupación del horario no se evalúa aquí: la resuelve la restricción de exclusión (409).
+   */
+  private async verificarHorarioOfrecido(profesionalId: string, clinicaId: string, inicioUtc: string) {
+    const prof = await db.query.profesionales.findFirst({ where: (p, { eq }) => eq(p.id, profesionalId) });
+    if (!prof) throw new NotFoundError('Profesional no encontrado');
+    if (prof.clinica_id !== clinicaId) throw new ValidationError('El profesional no pertenece a esta clínica');
+    if (!prof.activo) throw new ValidationError('El profesional no atiende actualmente');
+    const local = partesLocales(inicioUtc);
+    const slots = await disponibilidadService.generarSlots(profesionalId, clinicaId, local.fecha);
+    if (!slots.some((s) => s.hora === local.hora)) {
+      throw new ValidationError(`El profesional no ofrece un turno el ${local.fecha} a las ${local.hora}`);
+    }
   }
 
   /**
@@ -129,6 +152,7 @@ export class TurnosService {
     if (data.canal_reserva === 'web' && data.consentimiento_privacidad !== true) {
       throw new ValidationError('Debés aceptar la política de privacidad para reservar');
     }
+    await this.verificarHorarioOfrecido(data.profesional_id, clinicaId, inicioUtc);
     if (data.canal_reserva !== 'manual') {
       await this.verificarLimiteTelefono(clinicaId, telefono);
     }
@@ -179,7 +203,7 @@ export class TurnosService {
         return turno;
       });
     } catch (e) {
-      if (e instanceof ConflictError || e instanceof ValidationError) throw e;
+      if (e instanceof ConflictError || e instanceof ValidationError || e instanceof NotFoundError) throw e;
       traducirErrorPg(e);
     }
 
@@ -194,6 +218,7 @@ export class TurnosService {
   async avanzarEstado(
     id: string, data: AvanzarEstadoType, userId: string | null, clinicaId: string,
     _userRol?: string, profesionalId?: string,
+    enLaMismaTransaccion?: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<void>,
   ) {
     if (data.nuevo_estado === 'cancelado' && !data.motivo) {
       throw new ValidationError('El motivo es obligatorio al cancelar un turno');
@@ -224,6 +249,7 @@ export class TurnosService {
           turno_id: id, estado_desde: estadoActual, estado_hacia: nuevoEstado,
           usuario_id: userId ?? null, motivo: data.motivo ?? null,
         });
+        if (enLaMismaTransaccion) await enLaMismaTransaccion(tx);
         return actualizado!;
       });
     } catch (e) {
@@ -265,16 +291,19 @@ export class TurnosService {
     if (!propios.some((t) => t.id === turnoId)) {
       throw new NotFoundError('No hay un turno activo con ese identificador para este teléfono');
     }
+    // B3-05: la respuesta del paciente se registra en la misma transacción que el cambio de estado
     const actualizado = await this.avanzarEstado(
       turnoId,
       { nuevo_estado: accion, motivo: accion === 'cancelado' ? 'Cancelado por el paciente vía WhatsApp' : undefined },
-      null, clinicaId,
+      null, clinicaId, undefined, undefined,
+      async (tx) => {
+        await new LogComunicacionRepository(tx).registrar({
+          turno_id: turnoId, clinica_id: clinicaId,
+          tipo: accion === 'confirmado' ? 'confirmacion' : 'cancelacion',
+          respuesta_paciente: mensajePaciente?.slice(0, 500) ?? null,
+        });
+      },
     );
-    await new LogComunicacionRepository(db).registrar({
-      turno_id: turnoId, clinica_id: clinicaId,
-      tipo: accion === 'confirmado' ? 'confirmacion' : 'cancelacion',
-      respuesta_paciente: mensajePaciente?.slice(0, 500) ?? null,
-    });
     return { turno_id: actualizado.id, estado: actualizado.estado, cuando: formatoParaPaciente(actualizado.fecha_hora_inicio) };
   }
 

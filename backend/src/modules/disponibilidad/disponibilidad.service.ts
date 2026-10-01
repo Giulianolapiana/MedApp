@@ -51,24 +51,17 @@ export class DisponibilidadService {
    * Esta lógica ESTABA en el frontend, ahora vive en el backend donde corresponde.
    */
   async generarSlots(profesionalId: string, clinicaId: string, fecha: string) {
-    // Fix: Si fecha es "YYYY-MM-DD", new Date(fecha) asume UTC, 
-    // y getDay() al usar hora local puede dar el día anterior en zonas como UTC-3.
-    const [year, month, day] = fecha.split('-');
-    const date = new Date(Number(year), Number(month) - 1, Number(day));
-    const diaSemana = date.getDay(); // 0=Domingo, 1=Lunes, ...
+    // Un profesional inexistente, dado de baja o de otra clínica no ofrece horarios (A3-01)
+    const prof = await db.query.profesionales.findFirst({ where: (p, { eq: igual }) => igual(p.id, profesionalId) });
+    if (!prof || !prof.activo || prof.clinica_id !== clinicaId) return [];
 
-    // Buscar la disponibilidad del profesional para ese día
-    const disponibilidadDia = await this.repo.getByProfesionalAndDia(
-      profesionalId,
-      diaSemana,
-      clinicaId
-    );
+    // Día de la semana de la fecha calendario (sin depender de la zona del servidor)
+    const [year, month, day] = fecha.split('-').map(Number);
+    const diaSemana = new Date(Date.UTC(year, month - 1, day)).getUTCDay(); // 0=Domingo, 1=Lunes, ...
 
-    if (disponibilidadDia.length === 0) {
-      return []; // El profesional no atiende ese día
-    }
-
-    const config = disponibilidadDia[0];
+    // Todas las franjas habilitadas del profesional para ese día
+    const franjas = await this.repo.getByProfesionalAndDia(profesionalId, diaSemana, clinicaId);
+    if (franjas.length === 0) return []; // El profesional no atiende ese día
 
     // Turnos activos de ese día local del consultorio (A-01: rango UTC calculado en Mendoza)
     const { inicio, fin } = rangoDiaLocal(fecha);
@@ -84,7 +77,6 @@ export class DisponibilidadService {
           lt(turnos.fecha_hora_inicio, fin)
         )
       );
-
     const horasOcupadas = new Set(turnosOcupados.map(t => partesLocales(t.fecha_hora_inicio).hora));
 
     // "Hoy" y "ahora" en la zona del consultorio, no en la del servidor
@@ -92,34 +84,21 @@ export class DisponibilidadService {
     const esHoy = fecha === ahoraLocal.fecha;
     const [hA, mA] = ahoraLocal.hora.split(':').map(Number);
     const minutosActuales = hA * 60 + mA;
+    const aMin = (h: string) => { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; };
 
-    // Generar los slots de DURACION_TURNO_MINUTOS minutos
+    // Grilla de DURACION_TURNO_MINUTOS dentro de cada franja; un turno debe terminar dentro de ella
+    const vistos = new Set<string>();
     const slots: { hora: string; disponible: boolean }[] = [];
-    const [inicioH, inicioM] = config.horario_inicio.split(':').map(Number);
-    const [finH, finM] = config.horario_fin.split(':').map(Number);
-
-    let currentMin = inicioH * 60 + inicioM;
-    const endMin = finH * 60 + finM;
-
-    while (currentMin < endMin) {
-      const h = String(Math.floor(currentMin / 60)).padStart(2, '0');
-      const m = String(currentMin % 60).padStart(2, '0');
-      const hora = `${h}:${m}`;
-
-      // Si es hoy, omitir completamente los horarios que ya pasaron
-      if (esHoy && currentMin <= minutosActuales) {
-        currentMin += DURACION_TURNO_MINUTOS;
-        continue;
+    for (const franja of [...franjas].sort((a, b) => aMin(a.horario_inicio) - aMin(b.horario_inicio))) {
+      const finMin = aMin(franja.horario_fin);
+      for (let m = aMin(franja.horario_inicio); m + DURACION_TURNO_MINUTOS <= finMin; m += DURACION_TURNO_MINUTOS) {
+        if (esHoy && m <= minutosActuales) continue; // los horarios de hoy que ya pasaron no se ofrecen
+        const hora = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        if (vistos.has(hora)) continue;
+        vistos.add(hora);
+        slots.push({ hora, disponible: !horasOcupadas.has(hora) });
       }
-
-      slots.push({
-        hora,
-        disponible: !horasOcupadas.has(hora),
-      });
-
-      currentMin += DURACION_TURNO_MINUTOS;
     }
-
     return slots;
   }
 
@@ -127,10 +106,12 @@ export class DisponibilidadService {
    * Devuelve los días de la semana (0-6) en que el profesional tiene disponibilidad habilitada.
    */
   async diasDisponibles(profesionalId: string, clinicaId: string): Promise<number[]> {
+    const prof = await db.query.profesionales.findFirst({ where: (p, { eq: igual }) => igual(p.id, profesionalId) });
+    if (!prof || !prof.activo || prof.clinica_id !== clinicaId) return [];
     const configs = await this.repo.listByProfesional(profesionalId);
-    return configs
+    return [...new Set(configs
       .filter(c => c.habilitado && c.clinica_id === clinicaId)
-      .map(c => c.dia_semana);
+      .map(c => c.dia_semana))];
   }
 }
 
