@@ -12,13 +12,13 @@
           ]
         }
       },
-      "id": "schedule-backup",
+      "id": "ddb025fc-aa7a-4f81-86ad-3318bf551b82",
       "name": "Todas las noches a las 23:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -700,
-        0
+        240,
+        256
       ]
     },
     {
@@ -41,13 +41,13 @@
         },
         "options": {}
       },
-      "id": "cfg-tablero",
+      "id": "de15414a-326e-4e01-9d20-f91eb7bb9ead",
       "name": "Configuración de la clínica",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -480,
-        0
+        448,
+        256
       ]
     },
     {
@@ -66,24 +66,28 @@
         },
         "columns": {
           "mappingMode": "autoMapInputData",
+          "value": {},
           "matchingColumns": [
             "id"
-          ]
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "gs-agenda",
+      "id": "0ecd9e3c-92ae-46b7-b9d8-719829a92748",
       "name": "Sheets → Agenda",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        -40,
-        0
+        1040,
+        256
       ],
       "executeOnce": false,
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "CONFIGURAR_GSHEETS",
+          "id": "6VAsbSAGmqCILZg3",
           "name": "Google Sheets account"
         }
       }
@@ -99,42 +103,41 @@
         "jsonBody": "={{ JSON.stringify({ clinica_id: $('Configuración de la clínica').item.json.clinica_id, tipo_artefacto: 'tablero_agenda', tipo_ejecucion: 'automatica', estado: 'completado', archivo_url: $('Configuración de la clínica').item.json.planilla_url, detalle: `${$('Separar turnos').all().length} turnos exportados` }) }}",
         "options": {}
       },
-      "id": "reg-tablero",
+      "id": "c83227b1-3639-45e6-a55f-8514a6e7a74b",
       "name": "Registrar tablero en MedApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        180,
-        0
+        1264,
+        256
       ],
       "executeOnce": true,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REEMPLAZAR_AL_IMPORTAR",
-          "name": "MedApp API (x-api-key)"
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
         }
       }
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://api.verticedev.online/api/v1/turnos/tablero?clinica_id={{ $json.clinica_id }}&dias=14",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "http-tablero",
+      "id": "4f717e23-d986-4e81-8bb1-88c80fdfe9e4",
       "name": "Agenda próximos 14 días (API)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -260,
-        0
+        672,
+        256
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REEMPLAZAR_AL_IMPORTAR",
-          "name": "MedApp API (x-api-key)"
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
         }
       }
     },
@@ -142,13 +145,13 @@
       "parameters": {
         "jsCode": "return ($input.first().json.data || []).map(t => ({ json: t }));"
       },
-      "id": "split-tablero",
+      "id": "d586de58-1468-4a1b-a0e2-e655c22f7f56",
       "name": "Separar turnos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -150,
-        160
+        848,
+        256
       ]
     }
   ],
@@ -210,13 +213,17 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
-  "versionId": "backup-gsheets-v1",
+  "versionId": "a985641d-c0a3-4e4e-85c0-72e131460161",
   "meta": {
-    "templateCredsSetupCompleted": false
+    "templateCredsSetupCompleted": true,
+    "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
   },
+  "nodeGroups": [],
+  "id": "xX24GW8v5xCWIoZG",
   "tags": []
 }

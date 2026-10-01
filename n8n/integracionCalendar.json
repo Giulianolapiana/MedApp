@@ -9,13 +9,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "186ce62f-ee67-4b44-96de-b82a93be54eb",
+      "id": "d7a7578b-b135-4461-8059-1e95221a9507",
       "name": "Webhook MedAPP",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
         -480,
-        128
+        304
       ],
       "webhookId": "medapp-turnos-webhook",
       "credentials": {
@@ -36,13 +36,13 @@
           ]
         }
       },
-      "id": "3f5c7c1e-8cec-48d9-9ecf-8ecaddead269",
+      "id": "9ed70ab4-fffd-4eab-935c-7768066262a3",
       "name": "¿Es CREAR?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
         -256,
-        128
+        304
       ]
     },
     {
@@ -58,17 +58,17 @@
           "attendees": [
             "={{ $json.body.medico_email }}"
           ],
-          "summary": "=Turno MedApp: {{ $json.body.paciente }}",
-          "description": "=Turno {{ $json.body.turno_id }} · {{ $json.body.cuando }}"
+          "description": "=Turno {{ $json.body.turno_id }} · {{ $json.body.cuando }}",
+          "summary": "=Turno MedApp: {{ $json.body.paciente }}"
         }
       },
-      "id": "4ba3ea44-1ad0-45e9-9f24-bab455abcfb9",
+      "id": "924ed41b-e21a-41e7-9689-7d78c2974c1b",
       "name": "Google Calendar (Crear)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
         0,
-        0
+        176
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
@@ -84,13 +84,13 @@
         "responseBody": "={{ JSON.stringify({ google_event_id: $json.id ?? null }) }}",
         "options": {}
       },
-      "id": "f0a23f84-fc5c-42b1-b2f0-67510abc86cc",
+      "id": "2c1339a2-de2c-4d68-ae99-219b9b74493d",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
         240,
-        0
+        176
       ]
     },
     {
@@ -98,38 +98,38 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ !!($json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email) }}",
+              "value1": "={{ !!$('Webhook MedAPP').item.json.body.paciente_email }}",
               "value2": true
             }
           ]
         }
       },
-      "id": "¿tiene-email?-(alta)",
+      "id": "8414ae89-26bc-4c29-a3b8-41dfc73f54ba",
       "name": "¿Tiene email? (alta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
         0,
-        -176
+        0
       ]
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email }}",
-        "subject": "=Turno registrado · {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }}",
+        "sendTo": "={{ $('Webhook MedAPP').item.json.body.paciente_email }}",
+        "subject": "=Turno registrado · {{ $('Webhook MedAPP').item.json.body.cuando }}",
         "emailType": "text",
-        "message": "=Hola {{ $json.body?.paciente || $('Webhook MedAPP').first().json.body?.paciente }}:\n\nRegistramos tu turno con {{ $json.body?.profesional?.nombre || $('Webhook MedAPP').first().json.body?.profesional?.nombre }} ({{ $json.body?.profesional?.especialidad || $('Webhook MedAPP').first().json.body?.profesional?.especialidad }}) para el {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }} (hora de Mendoza).\n\nEl día anterior te enviaremos un recordatorio por WhatsApp. Respondiendo ese mensaje vas a poder confirmar el turno, cancelarlo o pedir otro horario. Si ya sabés que no podés asistir, avisanos por WhatsApp así liberamos el horario para otro paciente.\n\nConsultorio Médico Los Andes\nPolítica de privacidad: https://turnos.verticedev.online/privacidad\n",
+        "message": "=Hola {{ $('Webhook MedAPP').item.json.body.paciente }}:\n\nRegistramos tu turno con {{ $('Webhook MedAPP').item.json.body.profesional.nombre }} ({{ $('Webhook MedAPP').item.json.body.profesional.especialidad }}) para el {{ $('Webhook MedAPP').item.json.body.cuando }} (hora de Mendoza).\n\nEl día anterior te enviaremos un recordatorio por WhatsApp. Respondiendo ese mensaje vas a poder confirmar el turno, cancelarlo o pedir otro horario. Si ya sabés que no podés asistir, avisanos por WhatsApp así liberamos el horario para otro paciente.\n\nConsultorio Médico Los Andes\nPolítica de privacidad: https://turnos.verticedev.online/privacidad\n",
         "options": {
           "appendAttribution": false
         }
       },
-      "id": "mail-alta",
+      "id": "71dd679c-a87b-4c3e-abbb-7ae429789dde",
       "name": "Email: turno registrado",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
       "position": [
         240,
-        -176
+        -16
       ],
       "webhookId": "6559a7bf-569e-40b1-8994-aa8a4bdb2c83",
       "credentials": {
@@ -151,13 +151,13 @@
           ]
         }
       },
-      "id": "95caed30-503f-40e2-bb0c-5d025fd2b762",
+      "id": "dcc2d596-98d4-4845-a332-948e332e052b",
       "name": "¿Es CANCELAR?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
         -16,
-        240
+        416
       ]
     },
     {
@@ -171,13 +171,13 @@
           ]
         }
       },
-      "id": "¿tiene-evento-en-calendario?",
+      "id": "fcaa8317-a730-41aa-b3ca-71e94a119c79",
       "name": "¿Tiene evento en calendario?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
         240,
-        240
+        416
       ]
     },
     {
@@ -191,13 +191,13 @@
         "eventId": "={{ $json.body.google_event_id }}",
         "options": {}
       },
-      "id": "35376abf-0303-4e80-9b39-9e6314808d6b",
+      "id": "53b29e25-0a70-435f-abaf-922bc2a8e8ae",
       "name": "Google Calendar (Borrar)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
-        480,
-        200
+        496,
+        304
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
@@ -213,13 +213,13 @@
         "responseBody": "={{ JSON.stringify({ ok: true }) }}",
         "options": {}
       },
-      "id": "resp-canc",
+      "id": "693cad41-7ad1-407f-8ed8-e24865f1e9dc",
       "name": "Responder OK (cancelación)",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        720,
-        240
+        752,
+        432
       ]
     },
     {
@@ -227,38 +227,38 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ !!($json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email) }}",
+              "value1": "={{ !!$('Webhook MedAPP').item.json.body.paciente_email }}",
               "value2": true
             }
           ]
         }
       },
-      "id": "¿tiene-email?-(cancelación)",
+      "id": "36f69a21-818e-4381-8f4e-4a9d1303ec17",
       "name": "¿Tiene email? (cancelación)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        480,
-        400
+        240,
+        608
       ]
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.body?.paciente_email || $('Webhook MedAPP').first().json.body?.paciente_email }}",
-        "subject": "=Turno cancelado · {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }}",
+        "sendTo": "={{ $('Webhook MedAPP').item.json.body.paciente_email }}",
+        "subject": "=Turno cancelado · {{ $('Webhook MedAPP').item.json.body.cuando }}",
         "emailType": "text",
-        "message": "=Hola {{ $json.body?.paciente || $('Webhook MedAPP').first().json.body?.paciente }}:\n\nTu turno con {{ $json.body?.profesional?.nombre || $('Webhook MedAPP').first().json.body?.profesional?.nombre }} del {{ $json.body?.cuando || $('Webhook MedAPP').first().json.body?.cuando }} quedó cancelado.\n\nSi querés reservar otro horario, escribinos por WhatsApp o ingresá a https://turnos.verticedev.online.\n\nConsultorio Médico Los Andes\n",
+        "message": "=Hola {{ $('Webhook MedAPP').item.json.body.paciente }}:\n\nTu turno con {{ $('Webhook MedAPP').item.json.body.profesional.nombre }} del {{ $('Webhook MedAPP').item.json.body.cuando }} quedó cancelado.\n\nSi querés reservar otro horario, escribinos por WhatsApp o ingresá a https://turnos.verticedev.online.\n\nConsultorio Médico Los Andes\n",
         "options": {
           "appendAttribution": false
         }
       },
-      "id": "mail-canc",
+      "id": "3cb601c7-57a8-4511-b919-3e5bd664738f",
       "name": "Email: turno cancelado",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
       "position": [
-        720,
-        400
+        752,
+        592
       ],
       "webhookId": "6559a7bf-569e-40b1-8994-aa8a4bdb2c83",
       "credentials": {
@@ -275,16 +275,17 @@
         "responseBody": "={{ JSON.stringify({ ok: true }) }}",
         "options": {}
       },
-      "id": "resp-ok",
+      "id": "9bc681b8-8ba7-47ee-b252-a5809c949f7b",
       "name": "Responder OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
         240,
-        520
+        784
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook MedAPP": {
       "main": [
@@ -339,8 +340,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "¿Es CANCELAR?": {
@@ -403,14 +403,20 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     }
   },
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "active": false
+  "versionId": "20dd76f5-283e-48f9-87b5-be6976cd6017",
+  "meta": {
+    "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
+  },
+  "nodeGroups": [],
+  "id": "yOMo5g0aVDAWwRLn",
+  "tags": []
 }

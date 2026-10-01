@@ -12,35 +12,34 @@
           ]
         }
       },
-      "id": "schedule-trigger-recordatorios",
+      "id": "aea668c7-80e1-4b88-960b-e5fdcea80323",
       "name": "Todos los días a las 09:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -700,
-        0
+        -5664,
+        944
       ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "https://api.verticedev.online/api/v1/turnos/recordatorios",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "http-get-turnos-manana",
+      "id": "7cc03caf-1b4c-4d18-bd11-0f8b6289a929",
       "name": "Obtener Turnos de Mañana (MedAPP)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -480,
-        0
+        -5440,
+        944
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REEMPLAZAR_AL_IMPORTAR",
-          "name": "MedApp API (x-api-key)"
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
         }
       }
     },
@@ -48,13 +47,13 @@
       "parameters": {
         "jsCode": "const items = $input.first().json.data || [];\nif (!items.length) {\n  return [];\n}\nreturn items.map(turno => ({ json: turno }));"
       },
-      "id": "code-split-turnos",
+      "id": "68e650af-72a4-4798-8913-8f03fa71ae72",
       "name": "Separar cada Turno",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -260,
-        0
+        -5216,
+        944
       ]
     },
     {
@@ -143,13 +142,13 @@
         },
         "options": {}
       },
-      "id": "set-chatwoot-variables",
+      "id": "e9c98d6e-9bf5-45c6-8887-463645f311a8",
       "name": "Variables Chatwoot",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -40,
-        0
+        -4992,
+        944
       ]
     },
     {
@@ -169,13 +168,13 @@
           }
         }
       },
-      "id": "http-crear-contacto",
+      "id": "384d2fe8-93fb-4df0-841e-d63f17ee9c13",
       "name": "Crear Contacto (puede fallar)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        180,
-        0
+        -4784,
+        944
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -186,7 +185,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/contacts/search?q={{ encodeURIComponent('+' + $('Variables Chatwoot').item.json.paciente_telefono.replace('+', '').replace(/\\s+/g, '')) }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -198,13 +196,13 @@
           }
         }
       },
-      "id": "http-buscar-contacto-telefono",
+      "id": "830ec105-8226-4a7e-9c88-45417b90c022",
       "name": "Buscar Contacto por Teléfono",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        400,
-        0
+        -4560,
+        944
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -217,18 +215,17 @@
       "parameters": {
         "jsCode": "return $input.all().map((item, index) => {\n  const searchResults = item.json.payload || [];\n  const phone = '+' + $('Variables Chatwoot').itemMatching(index).json.paciente_telefono.replace('+', '').replace(/\\s+/g, '');\n  const match = searchResults.find(c => c.phone_number === phone);\n  return {\n    json: { contact_id: match ? match.id : 0 },\n    pairedItem: { item: index }\n  };\n});"
       },
-      "id": "code-extraer-contact-id",
+      "id": "bb2efc39-e27a-450f-86c6-288c960e4ca5",
       "name": "Extraer Contact ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        620,
-        0
+        -4336,
+        944
       ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{ $('Variables Chatwoot').item.json.serverUrl }}/api/v1/accounts/{{ $('Variables Chatwoot').item.json.accountId }}/contacts/{{ $json.contact_id }}/conversations",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -240,13 +237,13 @@
           }
         }
       },
-      "id": "http-buscar-conversaciones",
+      "id": "6078b81b-0be3-44ea-b355-80959e618378",
       "name": "Buscar Conversaciones",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        620,
-        0
+        -4096,
+        944
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -259,13 +256,13 @@
       "parameters": {
         "jsCode": "return $input.all().map((item, index) => {\n  const payload = item.json.payload || [];\n  const inboxId = parseInt($('Variables Chatwoot').itemMatching(index).json.inboxId);\n  const contactId = $('Extraer Contact ID').itemMatching(index).json.contact_id;\n\n  const existing = payload.find(c => c.inbox_id === inboxId && (c.status === 'open' || c.status === 'pending'));\n\n  if (existing) {\n    return { \n      json: { id: existing.id, reused: true, contact_id: contactId },\n      pairedItem: { item: index }\n    };\n  }\n  return { \n    json: { id: null, reused: false, contact_id: contactId },\n    pairedItem: { item: index }\n  };\n});"
       },
-      "id": "code-resolver-conversacion",
+      "id": "3a5c908e-c4eb-4082-a66c-efb5cc03240b",
       "name": "Resolver Conversación",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        840,
-        0
+        -4608,
+        1312
       ]
     },
     {
@@ -279,13 +276,13 @@
           ]
         }
       },
-      "id": "if-conv-existente",
+      "id": "42310cfa-f704-403d-bbba-692659b73e6b",
       "name": "¿Conv Existente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        1060,
-        0
+        -4400,
+        1312
       ]
     },
     {
@@ -305,13 +302,13 @@
           }
         }
       },
-      "id": "http-crear-conversacion-chatwoot",
+      "id": "c9769182-50c1-4a52-9de1-bf16711542a4",
       "name": "Crear Conversación",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1280,
-        200
+        -4176,
+        1504
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -332,19 +329,18 @@
         "options": {
           "response": {
             "response": {
-              "neverError": true,
-              "fullResponse": false
+              "neverError": true
             }
           }
         }
       },
-      "id": "http-enviar-recordatorio",
+      "id": "45421d20-d5e7-4451-bc74-3e2d553c1d83",
       "name": "Enviar WhatsApp Recordatorio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1500,
-        0
+        -3952,
+        1312
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -364,18 +360,18 @@
         "jsonBody": "={{ JSON.stringify({ mensaje_externo_id: String($json.id), estado: 'enviado' }) }}",
         "options": {}
       },
-      "id": "http-registrar-recordatorio",
+      "id": "e88a07a6-b0ac-4eaa-8e07-784d2e2c6d4e",
       "name": "Registrar Envío en MedApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1940,
-        -100
+        -3520,
+        1200
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REEMPLAZAR_AL_IMPORTAR",
-          "name": "MedApp API (x-api-key)"
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
         }
       }
     },
@@ -390,13 +386,13 @@
           ]
         }
       },
-      "id": "if-aceptado",
+      "id": "ae68aaa0-c773-4d37-b17d-28c30d3433e7",
       "name": "¿Chatwoot aceptó el envío?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        1720,
-        0
+        -3728,
+        1312
       ]
     },
     {
@@ -410,18 +406,18 @@
         "jsonBody": "={{ JSON.stringify({ estado: 'fallido', detalle: String($json.error?.message || $json.message || 'envío rechazado').slice(0, 500) }) }}",
         "options": {}
       },
-      "id": "http-registrar-fallo",
+      "id": "137627eb-2a5e-4bcb-9c0d-7ed2bf4cf3a4",
       "name": "Registrar fallo (permite reintento)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1940,
-        100
+        -3520,
+        1408
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REEMPLAZAR_AL_IMPORTAR",
-          "name": "MedApp API (x-api-key)"
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
         }
       }
     }
@@ -586,13 +582,16 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
-  "versionId": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "versionId": "ea95e41d-e65c-412a-9445-9907909240b8",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
   },
+  "nodeGroups": [],
+  "id": "aFPzPKbWM26e5jz3",
   "tags": []
 }
