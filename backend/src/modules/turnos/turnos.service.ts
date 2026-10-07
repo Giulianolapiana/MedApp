@@ -307,6 +307,81 @@ export class TurnosService {
     return { turno_id: actualizado.id, estado: actualizado.estado, cuando: formatoParaPaciente(actualizado.fecha_hora_inicio) };
   }
 
+  /**
+   * Reprogramación pedida desde WhatsApp (M3-08): cambio atómico de turno.
+   * En UNA transacción se cancela el turno anterior y se crea el nuevo; si el
+   * alta falla (horario no ofrecido, ocupado, en el pasado), se revierte todo y
+   * el turno anterior sigue vigente. El agente ya no encadena dos acciones.
+   * El anterior se cancela antes de insertar para permitir moverlo a un horario
+   * que se superpone con él (la restricción de exclusión solo cuenta turnos activos).
+   */
+  async reprogramarDesdeWhatsapp(
+    clinicaId: string, turnoId: string, telefono: string,
+    nuevo: { profesional_id: string; fecha_hora_inicio: string }, mensajePaciente?: string,
+  ) {
+    const tel = normalizarTelefonoAR(telefono);
+    const propios = await this.repo.proximosPorTelefono(clinicaId, tel, new Date().toISOString());
+    if (!propios.some((t) => t.id === turnoId)) {
+      throw new NotFoundError('No hay un turno activo con ese identificador para este teléfono');
+    }
+    let inicioUtc: string;
+    try {
+      inicioUtc = normalizarAUtc(nuevo.fecha_hora_inicio);
+    } catch {
+      throw new ValidationError('fecha_hora_inicio inválida');
+    }
+    if (new Date(inicioUtc).getTime() < Date.now()) {
+      throw new ValidationError('No se puede reservar un turno en el pasado');
+    }
+    const finUtc = sumarMinutos(inicioUtc, DURACION_TURNO_MINUTOS);
+    await this.verificarHorarioOfrecido(nuevo.profesional_id, clinicaId, inicioUtc);
+    const motivo = 'Reprogramado por el paciente vía WhatsApp';
+
+    let r: { anterior: Awaited<ReturnType<TurnosRepository['update']>>; nuevoTurno: Awaited<ReturnType<TurnosRepository['create']>> };
+    try {
+      r = await db.transaction(async (tx) => {
+        const turnosRepoTx = new TurnosRepository(tx);
+        const historialRepoTx = new HistorialTurnosRepository(tx);
+        const anteriorActual = await turnosRepoTx.getById(turnoId, clinicaId);
+        if (!anteriorActual) throw new NotFoundError('Turno no encontrado');
+        const estadoActual = anteriorActual.estado as EstadoTurno;
+        if (!validarTransicion(estadoActual, 'cancelado')) {
+          throw new ConflictError(`El turno está ${estadoActual} y no se puede reprogramar`);
+        }
+        const anterior = await turnosRepoTx.update(turnoId, { estado: 'cancelado' }, clinicaId);
+        await historialRepoTx.registrar({ turno_id: turnoId, estado_desde: estadoActual, estado_hacia: 'cancelado', usuario_id: null, motivo });
+
+        const conflicto = await turnosRepoTx.findConflicto(nuevo.profesional_id, inicioUtc, finUtc);
+        if (conflicto) throw new ConflictError('Ya existe un turno en ese horario para este profesional');
+        const nuevoTurno = await turnosRepoTx.create({
+          paciente_id: anteriorActual.paciente_id,
+          profesional_id: nuevo.profesional_id,
+          clinica_id: clinicaId,
+          fecha_hora_inicio: inicioUtc,
+          fecha_hora_fin: finUtc,
+          canal_reserva: 'whatsapp',
+        });
+        await historialRepoTx.registrar({ turno_id: nuevoTurno.id, estado_desde: 'nuevo', estado_hacia: 'pendiente', motivo: `Reprogramación del turno ${turnoId}` });
+        await new LogComunicacionRepository(tx).registrar({
+          turno_id: turnoId, clinica_id: clinicaId, tipo: 'cancelacion',
+          respuesta_paciente: mensajePaciente?.slice(0, 500) ?? null,
+        });
+        return { anterior, nuevoTurno };
+      });
+    } catch (e) {
+      if (e instanceof Error && 'statusCode' in e) throw e;
+      traducirErrorPg(e);
+    }
+
+    // Post-commit (RN-04): calendario y correos de ambos turnos
+    await this.notificarN8n(r!.anterior!, 'CANCELAR', motivo);
+    await this.notificarN8n(r!.nuevoTurno, 'CREAR', 'Reserva whatsapp (reprogramación)');
+    return {
+      anterior: { turno_id: turnoId, estado: 'cancelado', cuando: formatoParaPaciente(r!.anterior!.fecha_hora_inicio) },
+      nuevo: { turno_id: r!.nuevoTurno.id, estado: r!.nuevoTurno.estado, cuando: formatoParaPaciente(r!.nuevoTurno.fecha_hora_inicio) },
+    };
+  }
+
   // ─── Recordatorios (WF de n8n programado) ───────────────────────────────
 
   /** Turnos del día siguiente (hora local del consultorio) sin recordatorio enviado. */

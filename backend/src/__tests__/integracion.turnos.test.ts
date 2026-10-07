@@ -173,6 +173,34 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(await disponibilidadService.generarSlots(profesionalId, otra.id, fecha)).toHaveLength(0);
   });
 
+  it('M3-08: reprogramar por WhatsApp cancela el anterior y crea el nuevo en una sola operación', async () => {
+    const tel = paciente(70).telefono_whatsapp;
+    const original = await turnosService.crearWhatsapp({ clinica_id: clinicaId, telefono: tel, nombre_completo: 'Paciente Reprograma', profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T12:00:00` });
+    // Un tercero no puede reprogramar el turno ajeno
+    await expect(turnosService.reprogramarDesdeWhatsapp(clinicaId, original.id, '+5492619999999', { profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T12:30:00` })).rejects.toMatchObject({ statusCode: 404 });
+    const r = await turnosService.reprogramarDesdeWhatsapp(clinicaId, original.id, tel, { profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T12:30:00` }, 'Quiero cambiarlo');
+    expect(r.anterior.estado).toBe('cancelado');
+    expect(r.nuevo.estado).toBe('pendiente');
+    const activos = await turnosService.proximosDelPaciente(clinicaId, tel);
+    expect(activos).toHaveLength(1);
+    expect(activos[0].turno_id).toBe(r.nuevo.turno_id);
+    const hist = await turnosService.obtenerHistorial(original.id, clinicaId);
+    expect(hist.some((h: any) => h.estado_hacia === 'cancelado' && h.motivo?.includes('Reprogramado'))).toBe(true);
+  });
+
+  it('M3-08: si el horario nuevo no es válido o está ocupado, el turno anterior sigue vigente', async () => {
+    const tel = paciente(71).telefono_whatsapp;
+    const original = await turnosService.crearWhatsapp({ clinica_id: clinicaId, telefono: tel, nombre_completo: 'Paciente Rollback', profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T14:00:00` });
+    // Horario fuera de la grilla: falla antes de tocar la base
+    await expect(turnosService.reprogramarDesdeWhatsapp(clinicaId, original.id, tel, { profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T14:10:00` })).rejects.toMatchObject({ statusCode: 400 });
+    // Horario ocupado (12:30, tomado en la prueba anterior): falla dentro de la transacción y se revierte la cancelación
+    await expect(turnosService.reprogramarDesdeWhatsapp(clinicaId, original.id, tel, { profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T12:30:00` })).rejects.toMatchObject({ statusCode: 409 });
+    const [t] = await turnosService.proximosDelPaciente(clinicaId, tel);
+    expect(t.turno_id).toBe(original.id);
+    expect(t.estado).toBe('pendiente');
+    expect((await turnosService.obtenerHistorial(original.id, clinicaId)).length).toBe(1);
+  });
+
   it('B3-01: el historial de un turno no se entrega a otra clínica', async () => {
     const [t] = await db.select().from(schema.turnos).limit(1);
     const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica C' }).returning();

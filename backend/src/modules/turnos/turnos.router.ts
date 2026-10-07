@@ -77,6 +77,23 @@ turnosRouter.post('/whatsapp/:id/respuesta', apiKeyMiddleware, async (c) => {
   return c.json({ data });
 });
 
+// POST /api/v1/turnos/whatsapp/:id/reprogramacion — cambio atómico de turno (M3-08)
+const ReprogramacionWhatsapp = z.object({
+  clinica_id: z.string().uuid(),
+  telefono: z.string().min(8),
+  profesional_id: z.string().uuid(),
+  fecha_hora_inicio: z.string().min(1),
+  mensaje: z.string().max(500).optional(),
+}).strict();
+
+turnosRouter.post('/whatsapp/:id/reprogramacion', apiKeyMiddleware, async (c) => {
+  const parsed = ReprogramacionWhatsapp.safeParse(await c.req.json());
+  if (!parsed.success) throw new ValidationError(parsed.error.errors.map(e => e.message).join(', '));
+  const { clinica_id, telefono, profesional_id, fecha_hora_inicio, mensaje } = parsed.data;
+  const data = await turnosService.reprogramarDesdeWhatsapp(clinica_id, c.req.param('id')!, telefono, { profesional_id, fecha_hora_inicio }, mensaje);
+  return c.json({ data }, 201);
+});
+
 // GET /api/v1/turnos — ADMIN/RECEPCION/PROFESIONAL
 turnosRouter.get('/', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION', 'PROFESIONAL']), async (c) => {
   const user = c.get('user' as never) as AuthUser;
