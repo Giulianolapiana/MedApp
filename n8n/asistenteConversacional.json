@@ -135,9 +135,9 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Fecha y hora actual en Mendoza: {{ $now.setZone('America/Argentina/Mendoza').toFormat('yyyy-MM-dd HH:mm') }} ({{ $now.setZone('America/Argentina/Mendoza').setLocale('es').toFormat('EEEE d \\'de\\' MMMM \\'de\\' yyyy') }})\nMensaje del paciente: {{ $json.contenido }}\nNombre del paciente: {{ $json.usuario }}",
+        "text": "=Fecha y hora actual en Mendoza: {{ $now.setZone('America/Argentina/Mendoza').setLocale('es').toFormat(\"EEEE dd/MM/yyyy HH:mm\") }}\nCalendario (fecha → día de la semana; usalo tal cual, nunca lo calcules): {{ Array.from({ length: 21 }, (_, i) => $now.setZone('America/Argentina/Mendoza').plus({ days: i }).setLocale('es').toFormat('EEEE dd/MM/yyyy')).join(' · ') }}\nNombre del paciente: {{ $json.usuario }}\nMensaje del paciente: {{ $json.contenido }}\n(Respondé con voseo rioplatense: tenés, podés, necesitás, querés, cancelé, cuidate, decime.)",
         "options": {
-          "systemMessage": "=Sos Alfredo, el asistente virtual de MedAPP 🏥. Ayudás a pacientes a reservar turnos médicos por WhatsApp de forma simple y amigable.\n\n## Tu Personalidad\n- Sos cordial, profesional y eficiente\n   - Usás SIEMPRE español rioplatense con voseo en todos los mensajes, sin excepción: \"tenés\", \"podés\", \"querés\", \"confirmás\", \"cancelé\". NUNCA uses tuteo ni formas de España: nada de \"tú\", \"tienes\", \"puedes\", \"quieres\", \"he cancelado\", \"he reservado\".\n- Sos conciso: no escribís párrafos largos por WhatsApp\n- Usás emojis con moderación (👋, ✅, 📅, ⏰, 👨‍⚕️)\n\n## Flujo de Reserva de Turno\nSeguí estos pasos EN ORDEN:\n\n1. **Saludo**: Si es la primera interacción, saludá y preguntá en qué podés ayudar\n2. **Listar profesionales**: Cuando pida un turno, usá la herramienta `listar_profesionales` para mostrar los médicos disponibles con su especialidad. Mostrá la lista de forma compacta (nombre - especialidad)\n3. **Consultar días**: Cuando elija un profesional, usá `ver_dias_disponibles` para mostrarle qué días de la semana atiende. Traducí los números: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado\n4. **Consultar horarios**: Cuando elija una fecha (formato YYYY-MM-DD), usá `ver_horarios_disponibles` para mostrar los slots libres. Mostrá solo los horarios, no el JSON crudo\n5. **Confirmar datos**: Antes de reservar, mostrá un resumen y pedí confirmación:\n   - 👨‍⚕️ Profesional: [nombre]\n   - 📅 Fecha: [fecha legible]\n   - ⏰ Hora: [hora]\n   - 👤 Paciente: [nombre]\n6. **Reservar**: Cuando confirme, usá `reservar_turno` para crear el turno\n\n## Datos del Paciente\n- El nombre del paciente ya lo tenés del contexto del mensaje (campo 'Nombre del paciente')\n- El teléfono lo agrega el sistema en las herramientas; nunca lo pidas ni lo escribas\n- NO le pidas estos datos al paciente si ya los tenés\n\n## Confirmar, cancelar o reprogramar un turno\n- Si el paciente responde a un recordatorio o pide ver/confirmar/cancelar/cambiar un turno, usá `mis_turnos` para ver SUS turnos activos (la herramienta ya usa el teléfono del remitente).\n- Si tiene más de un turno, preguntá a cuál se refiere antes de actuar.\n- CONFIRMAR: usá `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del ...?\") y recién después usá `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: primero reservá el turno nuevo y recién después cancelá el anterior, para que el paciente nunca se quede sin turno. Buscá y mostrá horarios libres; cuando el paciente elija, reservá el nuevo con `reservar_turno`. Si la reserva sale bien, cancelá el anterior con `responder_turno` (accion \"cancelado\") y confirmale ambos cambios. Si la reserva falla, el turno anterior sigue vigente: decíselo y ofrecé otro horario.\n- Nunca digas que una acción se hizo si la herramienta devolvió error.\n\n## Datos personales (Ley 25.326)\n- En la primera interacción informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en https://turnos.verticedev.online/privacidad.\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta.\n\n## Reglas IMPORTANTES\n- NUNCA inventes información. Solo usá datos que devuelvan las herramientas\n- La fecha y hora actual en Mendoza se indica SIEMPRE al inicio del mensaje. Tomala como referencia absoluta para el año, mes y día de la semana. Estamos en el año 2026. NUNCA uses años pasados (como 2023 o 2024)\n- Todo turno debe ser a futuro respecto al momento actual. Para el día de hoy, solo podés reservar horarios posteriores a la hora actual\n- Al calcular fechas a partir de días de atención (ej: si atiende los jueves), calculá el próximo jueves futuro a partir de la fecha actual\n- Si no hay turnos disponibles en una fecha, sugerí otra fecha cercana\n- Las fechas siempre en formato YYYY-MM-DD para las herramientas. Todas las horas son hora de Mendoza\n- Para reservar, fecha_hora_inicio debe ser formato ISO: YYYY-MM-DDTHH:mm:00\n- El canal_reserva siempre es \"whatsapp\"\n- Si pregunta algo que no sea sobre turnos médicos, respondé amablemente que solo podés ayudar con la gestión de turnos\n- Cuando muestres profesionales, NO muestres los IDs técnicos (UUIDs). Usá números (1, 2, 3) y mapeá internamente"
+          "systemMessage": "=Sos Alfredo, el asistente virtual del Consultorio Médico Los Andes en MedAPP 🏥. Ayudás a los pacientes a reservar, confirmar, cancelar y reprogramar turnos por WhatsApp.\n \n## Idioma (obligatorio en TODOS los mensajes)\n- Escribís en español rioplatense con voseo. Antes de enviar, revisá tu respuesta y reemplazá cualquier forma de tuteo o de España:\n  tienes→tenés · puedes→podés · quieres→querés · necesitas→necesitás · confirmas→confirmás · dime→decime · avísame→avisame · cuídate→cuidate · he cancelado→cancelé · he reservado→reservé · estoy aquí→estoy acá · no dudes→no dudés.\n- Sos cordial, profesional y breve: mensajes cortos, sin párrafos largos. Emojis con moderación (👋 ✅ 📅 ⏰ 👨‍⚕️).\n \n## Fechas (obligatorio)\n- NUNCA calcules vos el día de la semana de una fecha. Usá la `fecha_legible` que devuelve `proximos_horarios` o el calendario que viene en el mensaje.\n- Mostrá las fechas siempre como \"viernes 09/10/2026\". Todas las horas son de Mendoza.\n- Para las herramientas: fecha en formato YYYY-MM-DD y fecha_hora_inicio en formato YYYY-MM-DDTHH:mm:00.\n \n## Herramientas\n- `listar_profesionales`: médicos y especialidades. Mostralos numerados (1, 2, 3), sin IDs.\n- `proximos_horarios`: herramienta PRINCIPAL para ofrecer turnos. Devuelve las próximas fechas con lugar, con su día de la semana y horarios libres.\n  · \"el próximo viernes\" → dia = \"viernes\" y usá la PRIMERA fecha que devuelva.\n  · \"lo antes posible\" o sin preferencia → sin dia; ofrecé las 2 o 3 primeras fechas.\n  · Mostrá como máximo 3 fechas y hasta 8 horarios por fecha; si hay más, ofrecé ver más.\n- `ver_horarios_disponibles`: solo cuando el paciente da una fecha exacta.\n- `reservar_turno`, `mis_turnos`, `responder_turno`, `reprogramar_turno`, `derivar_a_humano`: ver los flujos de abajo.\n \n## Reservar un turno\n1. Si no dijo con quién, usá `listar_profesionales` y preguntá con cuál.\n2. Usá `proximos_horarios` y ofrecé fechas y horarios.\n3. Antes de reservar mostrá el resumen y pedí confirmación explícita:\n   👨‍⚕️ Profesional · 📅 Fecha (con día de la semana) · ⏰ Hora · 👤 Paciente\n4. Con el \"sí\", usá `reservar_turno`.\n \n## Confirmar, cancelar o reprogramar\n- Usá `mis_turnos` para ver los turnos activos del paciente (la herramienta ya usa su teléfono). Si tiene más de uno, preguntá a cuál se refiere.\n- CONFIRMAR: `responder_turno` con accion \"confirmado\".\n- CANCELAR: pedí confirmación explícita (\"¿Confirmás que querés cancelar el turno del viernes 09/10/2026 a las 16:00?\") y recién después `responder_turno` con accion \"cancelado\".\n- REPROGRAMAR: ofrecé horarios con el MISMO profesional (solo cambiá de profesional si el paciente lo pide), usando `proximos_horarios`. Pedí confirmación explícita del nuevo horario y recién entonces usá `reprogramar_turno` (turno_id del turno actual, profesional_id y fecha_hora_inicio del nuevo). Esa herramienta cancela el anterior y reserva el nuevo en una sola operación: NUNCA uses `reservar_turno` ni `responder_turno` para reprogramar.\n- Si una herramienta devuelve error, NO digas que la acción se hizo: explicá el problema en una frase y ofrecé una alternativa (otro horario, reintentar o hablar con una persona).\n \n## Derivar a una persona\nUsá `derivar_a_humano` y avisale al paciente que una persona del consultorio le va a responder por este mismo chat cuando:\n- pide hablar con una persona;\n- está molesto o hay un malentendido que no podés resolver;\n- consulta algo que no es la gestión de turnos y no está en la información del consultorio;\n- una herramienta falló dos veces seguidas.\nSi describe una urgencia médica, NO derives ni des consejos: respondé \"Si es una urgencia, llamá al 911 o al 107 (SAME), o andá a la guardia más cercana.\"\n \n## Información del consultorio (respondé SOLO con estos datos; si no está acá, decí que no tenés ese dato y ofrecé derivar)\n- Dirección: Mendoza, Ciudad, Calle don bosco 163\n- Horario de atención: 8:00 a 21:00\n- Obras sociales y prepagas: No se reciben\n- Llegá 10 minutos antes. Si no podés asistir, avisá por este chat así liberamos el horario.\n- Reservas también en https://turnos.verticedev.online\n \n## Datos personales (Ley 25.326)\n- En la primera interacción del día informá brevemente: \"Tus datos (nombre y teléfono) se usan solo para gestionar tus turnos en este consultorio. Podés consultar la política de privacidad en https://turnos.verticedev.online/privacidad.\"\n- No pidas ni registres síntomas, diagnósticos ni motivos de consulta. Nunca pidas el teléfono: lo agrega el sistema. El nombre ya lo tenés en el mensaje.\n \n## Reglas\n- NUNCA inventes información: usá solo lo que devuelven las herramientas o la información del consultorio.\n- Todo turno debe ser a futuro. Estamos en el año 2026.\n- Nunca muestres IDs técnicos (UUID) ni JSON."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -147,16 +147,22 @@
         1664
       ],
       "id": "38ab1924-d73c-4c70-8363-8a4aef282a2a",
-      "name": "AI Agent"
+      "name": "AI Agent",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
           "mode": "list",
-          "value": "gpt-4o-mini"
+          "cachedResultName": "gpt-4.1-mini"
         },
         "responsesApiEnabled": false,
-        "options": {}
+        "options": {
+          "temperature": 0.2
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
@@ -177,13 +183,13 @@
       "parameters": {
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.chatID }}",
-        "contextWindowLength": 10
+        "contextWindowLength": 12
       },
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
       "position": [
         4208,
-        1984
+        1920
       ],
       "id": "3f27a11c-78ce-484e-b1c4-d20320afc220",
       "name": "Simple Memory"
@@ -203,7 +209,7 @@
       "typeVersion": 4.5,
       "position": [
         4976,
-        1680
+        1504
       ],
       "id": "532d1fa4-b296-41eb-baf8-93df7418b8ba",
       "name": "Respuesta",
@@ -225,34 +231,11 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        4624,
+        4720,
         1936
       ],
       "id": "2df0e48d-3bb9-438a-a914-741eae4ed039",
       "name": "listar_profesionales",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "zLEFKN1hjS8DwgiB",
-          "name": "MedApp API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "toolDescription": "Consulta qué días de la semana atiende un profesional. Devuelve números (0=Domingo, 1=Lunes, etc).",
-        "url": "={{ $('Edit Fields').item.json.apiUrl }}/disponibilidad/{{ $fromAI('profesional_id', 'UUID del médico') }}/dias?clinica_id={{ $('Edit Fields').item.json.clinicaId }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 4.5,
-      "position": [
-        4752,
-        1920
-      ],
-      "id": "013823ee-8a14-4ca4-8eda-0a71b41ff646",
-      "name": "ver_dias_disponibles",
       "credentials": {
         "httpHeaderAuth": {
           "id": "zLEFKN1hjS8DwgiB",
@@ -271,8 +254,8 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        4896,
-        1920
+        4992,
+        1936
       ],
       "id": "b8ab6081-0371-4a8d-8ae7-52559960da45",
       "name": "ver_horarios_disponibles",
@@ -298,8 +281,8 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        5072,
-        1936
+        5120,
+        1968
       ],
       "id": "7e5b6601-6cca-4b2f-975c-e9efc9129acc",
       "name": "reservar_turno",
@@ -321,8 +304,8 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        5216,
-        1952
+        5264,
+        1936
       ],
       "id": "703340d1-04cb-4e18-950c-f5e00643ddee",
       "name": "mis_turnos",
@@ -348,8 +331,8 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.5,
       "position": [
-        5408,
-        1968
+        5264,
+        2112
       ],
       "id": "e6c1a1fd-a2ba-4754-930c-9ba9cd1f3ee3",
       "name": "responder_turno",
@@ -683,6 +666,109 @@
         4128,
         2128
       ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Reprograma un turno del paciente que está escribiendo: cancela el anterior y reserva el nuevo en una sola operación. Requiere turno_id (el turno actual, de mis_turnos), profesional_id y fecha_hora_inicio del turno nuevo. El teléfono lo agrega el sistema.",
+        "method": "POST",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/turnos/whatsapp/{{ $fromAI('turno_id', 'ID del turno actual, obtenido de mis_turnos') }}/reprogramacion",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clinica_id: $('Edit Fields').item.json.clinicaId, telefono: $('Edit Fields').item.json.telefono, profesional_id: $fromAI('profesional_id', 'UUID del médico del turno nuevo'), fecha_hora_inicio: $fromAI('fecha_hora_inicio', 'Fecha y hora local en formato YYYY-MM-DDTHH:mm:00'), mensaje: String($('Edit Fields').item.json.contenido || '').slice(0, 500) }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        5120,
+        2096
+      ],
+      "id": "2cfea1af-b440-48a2-8bfd-9cd7b95001c1",
+      "name": "reprogramar_turno",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Devuelve las próximas fechas con horarios libres de un profesional, con el día de la semana ya calculado (fecha_legible). Parámetros: profesional_id (obligatorio) y dia (opcional: lunes, martes, miércoles, jueves, viernes, sábado o domingo; vacío = cualquier día).",
+        "url": "={{ $('Edit Fields').item.json.apiUrl }}/disponibilidad/{{ $fromAI('profesional_id', 'UUID del médico') }}/proximos?clinica_id={{ $('Edit Fields').item.json.clinicaId }}&dias=21&dia={{ encodeURIComponent($fromAI('dia', 'Día de la semana pedido por el paciente, en minúsculas (ej. viernes); vacío si no pidió un día', 'string', '')) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        4976,
+        2096
+      ],
+      "id": "c6a91715-d04f-4729-bdda-54f2573d918c",
+      "name": "proximos_horarios",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zLEFKN1hjS8DwgiB",
+          "name": "MedApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Pasa la conversación a una persona del consultorio y apaga el asistente en este chat. Usala solo en los casos de \"Derivar a una persona\"",
+        "method": "POST",
+        "url": "={{ $('Edit Fields').item.json.serverUrl }}/api/v1/accounts/{{ $('Edit Fields').item.json.accoundID }}/conversations/{{ $('Edit Fields').item.json.conversaccionID }}/labels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"labels\": [\"bot_off\"] }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        4768,
+        2112
+      ],
+      "id": "8a1c598b-f120-4120-980f-b9d1957eebc7",
+      "name": "derivar_a_humano",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Edit Fields').item.json.serverUrl }}/api/v1/accounts/{{ $('Edit Fields').item.json.accoundID }}/conversations/{{ $('Edit Fields').item.json.conversaccionID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"Perdón, tuve un problema técnico y no pude procesar tu mensaje 😕. Probá de nuevo en unos minutos o reservá en https://turnos.verticedev.online\",\n  \"private\": false,\n  \"message_type\": \"outgoing\",\n  \"sender\": { \"type\": \"bot\" }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4976,
+        1664
+      ],
+      "id": "4d9d75ef-feb6-43d0-9ad8-d64f80a89e48",
+      "name": "Respuesta de contingencia",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xzyTaKXyidm2A0tU",
+          "name": "chatwoot bot"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -758,17 +844,6 @@
         ]
       ]
     },
-    "ver_dias_disponibles": {
-      "ai_tool": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "ver_horarios_disponibles": {
       "ai_tool": [
         [
@@ -818,6 +893,13 @@
         [
           {
             "node": "Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta de contingencia",
             "type": "main",
             "index": 0
           }
@@ -944,6 +1026,39 @@
           }
         ]
       ]
+    },
+    "reprogramar_turno": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "proximos_horarios": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "derivar_a_humano": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -951,7 +1066,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "88ebd974-4bfb-4987-ab79-4cd09b3e5f52",
+  "versionId": "c73204b7-798f-4a41-b643-6fc9ec1aa425",
   "meta": {
     "instanceId": "19a7070dc3a7b2c911a254c8c6d3c481d9d3362bae23aa033a05e95d3606b8fb"
   },
