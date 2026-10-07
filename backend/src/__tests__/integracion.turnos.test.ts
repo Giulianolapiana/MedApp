@@ -201,6 +201,21 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect((await turnosService.obtenerHistorial(original.id, clinicaId)).length).toBe(1);
   });
 
+  it('M3-09: próximos horarios con el día de la semana calculado por el servidor', async () => {
+    const semana = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 7 });
+    expect(semana).toHaveLength(1); // la profesional de prueba atiende solo los lunes
+    const [y, m, d] = fecha.split('-');
+    expect(semana[0]).toMatchObject({ fecha, dia_semana: 'lunes', fecha_legible: `lunes ${d}/${m}/${y}` });
+    expect(semana[0].horarios).not.toContain('10:00'); // ocupado por la prueba K-07
+    expect(semana[0].horarios).toContain('12:00'); // liberado por la reprogramación M3-08
+    const lunes = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'Lunes' });
+    expect(lunes.map((x: any) => x.dia_semana)).toEqual(['lunes', 'lunes']);
+    expect(await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'miércoles' })).toEqual([]);
+    await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'feriado' })).rejects.toMatchObject({ statusCode: 400 });
+    const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica D' }).returning();
+    expect(await disponibilidadService.proximosHorarios(profesionalId, otra.id, { desde: fecha, dias: 7 })).toEqual([]);
+  });
+
   it('B3-01: el historial de un turno no se entrega a otra clínica', async () => {
     const [t] = await db.select().from(schema.turnos).limit(1);
     const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica C' }).returning();

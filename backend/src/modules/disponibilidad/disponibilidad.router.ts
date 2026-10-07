@@ -37,6 +37,20 @@ disponibilidadRouter.get('/:profId/slots', async (c) => {
   return c.json({ data: slots });
 });
 
+// GET /api/v1/disponibilidad/:profId/proximos?clinica_id=&dia=viernes&desde=YYYY-MM-DD&dias=21 — Público
+// Próximas fechas con horarios libres, con el día de la semana calculado por el servidor
+disponibilidadRouter.get('/:profId/proximos', async (c) => {
+  const clinicaId = c.req.query('clinica_id');
+  if (!clinicaId) throw new ValidationError('El parámetro clinica_id es requerido');
+  const diasQ = c.req.query('dias');
+  const data = await disponibilidadService.proximosHorarios(c.req.param('profId')!, clinicaId, {
+    desde: c.req.query('desde') || undefined,
+    dias: diasQ ? Number(diasQ) : undefined,
+    dia: c.req.query('dia') || undefined,
+  });
+  return c.json({ data, total: data.length });
+});
+
 // GET /api/v1/disponibilidad/:profId — Config semanal
 disponibilidadRouter.get('/:profId', authMiddleware, requireRole(['ADMINISTRADOR', 'RECEPCION', 'PROFESIONAL']), async (c) => {
   const profId = c.req.param('profId')!;

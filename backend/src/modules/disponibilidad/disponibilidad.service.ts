@@ -5,6 +5,10 @@ import { rangoDiaLocal, partesLocales, DURACION_TURNO_MINUTOS } from '../../core
 import { DisponibilidadRepository } from './disponibilidad.repository.js';
 import { turnos } from '../../db/schema.js';
 import { GuardarDisponibilidadType } from './disponibilidad.schemas.js';
+import { ValidationError } from '../../core/errors.js';
+
+const NOMBRES_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const NOMBRES_DIA_SIN_TILDE = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 
 
 export class DisponibilidadService {
@@ -100,6 +104,40 @@ export class DisponibilidadService {
       }
     }
     return slots;
+  }
+
+  /**
+   * Próximas fechas con horarios libres de un profesional (herramienta del asistente).
+   * El backend calcula fecha, día de la semana y horarios: el modelo de lenguaje no
+   * tiene que deducir qué día cae cada fecha (error observado el 07/10: "viernes 14").
+   * - desde: fecha local inicial (por defecto, hoy en Mendoza).
+   * - dias: ventana de búsqueda, entre 1 y 60 (por defecto 21).
+   * - dia: filtra un día de la semana ("viernes" o 5).
+   * Solo devuelve fechas con al menos un horario disponible.
+   */
+  async proximosHorarios(profesionalId: string, clinicaId: string, opciones: { desde?: string; dias?: number; dia?: string } = {}) {
+    const desde = opciones.desde ?? partesLocales(new Date()).fecha;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(desde)) throw new ValidationError('desde debe tener formato YYYY-MM-DD');
+    const dias = Math.min(Math.max(Math.trunc(opciones.dias ?? 21) || 21, 1), 60);
+    let filtroDia: number | undefined;
+    if (opciones.dia !== undefined && opciones.dia !== '') {
+      const norm = opciones.dia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      filtroDia = /^[0-6]$/.test(norm) ? Number(norm) : NOMBRES_DIA_SIN_TILDE.indexOf(norm);
+      if (filtroDia < 0) throw new ValidationError('dia debe ser un día de la semana (lunes…domingo) o un número de 0 a 6');
+    }
+    const [y, m, d] = desde.split('-').map(Number);
+    const resultado: { fecha: string; dia_semana: string; fecha_legible: string; horarios: string[] }[] = [];
+    for (let i = 0; i < dias; i++) {
+      const f = new Date(Date.UTC(y, m - 1, d + i));
+      const diaSemana = f.getUTCDay();
+      if (filtroDia !== undefined && diaSemana !== filtroDia) continue;
+      const fecha = f.toISOString().slice(0, 10);
+      const libres = (await this.generarSlots(profesionalId, clinicaId, fecha)).filter((s) => s.disponible).map((s) => s.hora);
+      if (libres.length === 0) continue;
+      const [yy, mm, dd] = fecha.split('-');
+      resultado.push({ fecha, dia_semana: NOMBRES_DIA[diaSemana], fecha_legible: `${NOMBRES_DIA[diaSemana]} ${dd}/${mm}/${yy}`, horarios: libres });
+    }
+    return resultado;
   }
 
   /**
