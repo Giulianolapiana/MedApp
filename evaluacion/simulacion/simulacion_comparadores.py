@@ -21,6 +21,13 @@ típico confirma la agenda por teléfono. Este modelo:
 El script original (simulacion_medapp.py) se conserva sin cambios para que los
 resultados de la versión anterior sigan siendo reproducibles.
 
+Números aleatorios comunes (M3-07, M4-07): cada celda (comparador × Δc) se
+simula con un generador nuevo inicializado con la misma semilla, de modo que
+todas las celdas comparten los mismos escenarios de parámetros y de meses
+simulados, y las diferencias entre celdas se deben solo a Δc y al comparador.
+Con --rng secuencial se reproducen las tablas de la tercera entrega, que usaban
+un único generador para todas las celdas.
+
 Uso:  python simulacion_comparadores.py --escenarios 10000 --semilla 20260916
 Salida: resultados/comparadores.json, comparadores_grilla.csv, fig_comparadores.png
 """
@@ -116,13 +123,16 @@ def main():
     ap.add_argument("--escenarios", type=int, default=10_000)
     ap.add_argument("--semilla", type=int, default=20260916)
     ap.add_argument("--salida", default=str(Path(__file__).parent / "resultados"))
+    ap.add_argument("--rng", choices=("comunes", "secuencial"), default="comunes",
+                    help="comunes: un generador por celda con la misma semilla; secuencial: tercera entrega")
     args = ap.parse_args()
     out = Path(args.salida); out.mkdir(parents=True, exist_ok=True)
-    rng = np.random.default_rng(args.semilla)
+    rng_unico = np.random.default_rng(args.semilla)
 
     grilla, general = [], {}
     for comp in ("C0", "C1"):
         for dc in (0.0, 0.10, 0.25, 0.40, None):
+            rng = np.random.default_rng(args.semilla) if args.rng == "comunes" else rng_unico
             res = [escenario(rng, comp, dc) for _ in range(args.escenarios)]
             red = np.array([r[0] for r in res]); ocu = np.array([r[1] for r in res])
             fila = dict(comparador=comp, dc="U(0; 0,40)" if dc is None else dc,
@@ -138,7 +148,7 @@ def main():
                 general[comp] = fila
 
     (out / "comparadores.json").write_text(json.dumps(
-        dict(semilla=args.semilla, escenarios_por_celda=args.escenarios, parametros=PARAMETROS,
+        dict(semilla=args.semilla, generador=args.rng, escenarios_por_celda=args.escenarios, parametros=PARAMETROS,
              grilla=grilla, incertidumbre_completa=general), ensure_ascii=False, indent=2), encoding="utf-8")
     with open(out / "comparadores_grilla.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(grilla[0].keys())); w.writeheader(); w.writerows(grilla)
