@@ -4,6 +4,7 @@ import { GuardarDisponibilidadRequest } from './disponibilidad.schemas.js';
 import { ValidationError } from '../../core/errors.js';
 import { authMiddleware, AuthUser } from '../../middleware/auth.middleware.js';
 import { requireRole } from '../../middleware/require-role.js';
+import { apiKeyMiddleware } from '../../middleware/api-key.js';
 
 const disponibilidadRouter = new Hono();
 
@@ -37,9 +38,10 @@ disponibilidadRouter.get('/:profId/slots', async (c) => {
   return c.json({ data: slots });
 });
 
-// GET /api/v1/disponibilidad/:profId/proximos?clinica_id=&dia=viernes&desde=YYYY-MM-DD&dias=21 — Público
-// Próximas fechas con horarios libres, con el día de la semana calculado por el servidor
-disponibilidadRouter.get('/:profId/proximos', async (c) => {
+// GET /api/v1/disponibilidad/:profId/proximos?clinica_id=&dia=viernes&desde=YYYY-MM-DD&dias=21 — Servicio (WF-03)
+// Próximas fechas con horarios libres, con el día de la semana calculado por el servidor.
+// Requiere la clave de servicio (M4-06): recorre hasta 31 días y solo lo usa el asistente.
+disponibilidadRouter.get('/:profId/proximos', apiKeyMiddleware, async (c) => {
   const clinicaId = c.req.query('clinica_id');
   if (!clinicaId) throw new ValidationError('El parámetro clinica_id es requerido');
   const diasQ = c.req.query('dias');

@@ -216,6 +216,30 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(await disponibilidadService.proximosHorarios(profesionalId, otra.id, { desde: fecha, dias: 7 })).toEqual([]);
   });
 
+  it('M4-03: el filtro de día acepta frases como "el próximo lunes" y sigue rechazando valores sin día', async () => {
+    const r = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'el próximo Lunes' });
+    expect(r.length).toBeGreaterThan(0);
+    expect(r.every((x: any) => x.dia_semana === 'lunes')).toBe(true);
+    await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'pasado mañana' })).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('M4-06: /disponibilidad/{id}/proximos exige la clave de servicio', async () => {
+    const { default: router } = await import('../modules/disponibilidad/disponibilidad.router.js');
+    const url = `/${profesionalId}/proximos?clinica_id=${clinicaId}`;
+    expect((await router.request(url)).status).toBe(401);
+    const ok = await router.request(url, { headers: { 'x-api-key': process.env.N8N_API_KEY! } });
+    expect(ok.status).toBe(200);
+  });
+
+  it('M4-06: no se ofrecen fechas pasadas y la ventana se limita a 31 días', async () => {
+    const hoy = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
+    const pasado = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: '2026-01-01', dias: 31 });
+    expect(pasado.every((x: any) => x.fecha >= hoy)).toBe(true);
+    const largo = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 365 });
+    const tope = new Date(Date.parse(fecha) + 31 * 86400000).toISOString().slice(0, 10);
+    expect(largo.every((x: any) => x.fecha < tope)).toBe(true);
+  });
+
   it('B3-01: el historial de un turno no se entrega a otra clínica', async () => {
     const [t] = await db.select().from(schema.turnos).limit(1);
     const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica C' }).returning();
