@@ -52,12 +52,13 @@ La API corre en el mismo VPS que n8n y en la misma región que la base de datos
 4. Sin dominio. El contenedor ejecuta `crond`: todos los días a las 03:00 (Mendoza).
 5. Prueba manual: consola del contenedor → `TIPO_EJECUCION=manual respaldo.sh`.
    Debe aparecer en el panel (Configuración → Backups).
-6. **Prueba de restauración** (hacerla al menos una vez y documentarla):
+6. **Prueba de restauración** (hacerla al menos una vez y documentarla), desde la consola del contenedor:
    ```
-   DESTINO_URL=postgresql://postgres:<pass>@<base-de-prueba>/postgres \
-     /usr/local/bin/restaurar.sh /respaldos/medapp_<fecha>.dump
+   probar_restauracion.sh
    ```
-   Copiar `restaurar.sh` al contenedor o ejecutarlo desde una máquina con `psql`.
+   Levanta un PostgreSQL temporal dentro del contenedor, restaura el volcado más reciente y muestra
+   la cantidad de filas, la restricción de exclusión y los disparadores. No toca la base de producción.
+   `restaurar.sh` sigue disponible para restaurar en otra base (`DESTINO_URL=... restaurar.sh <archivo>`).
 
 Opcional: sincronizar `/root/medapp-respaldos` a un almacenamiento externo
 (Cloudflare R2, Backblaze B2) con `rclone`, para no depender de un único proveedor.
