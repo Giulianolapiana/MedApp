@@ -122,7 +122,9 @@ export class DisponibilidadService {
     let filtroDia: number | undefined;
     if (opciones.dia !== undefined && opciones.dia !== '') {
       const norm = opciones.dia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-      filtroDia = /^[0-6]$/.test(norm) ? Number(norm) : NOMBRES_DIA_SIN_TILDE.indexOf(norm);
+      filtroDia = /^[0-6]$/.test(norm)
+        ? Number(norm)
+        : NOMBRES_DIA_SIN_TILDE.findIndex(d => norm === d || norm.includes(d));
       if (filtroDia < 0) throw new ValidationError('dia debe ser un día de la semana (lunes…domingo) o un número de 0 a 6');
     }
     const [y, m, d] = desde.split('-').map(Number);
