@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { startOfWeek, addDays, format, getDay, differenceInMinutes, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Turno } from "../hooks/useAgenda";
@@ -24,31 +25,116 @@ export function TimeGrid({ currentDate, turnos, onTurnoClick }: TimeGridProps & 
     return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
   });
 
-  // 3. Helper to position a turno in the CSS Grid
-  const getGridStyle = (turno: Turno) => {
-    const start = parseISO(turno.fecha_hora_inicio);
-    const end = turno.fecha_hora_fin ? parseISO(turno.fecha_hora_fin) : null;
-    
-    // Column: 1 for time label, 2 for Monday... 8 for Sunday
-    // date-fns getDay: 0 is Sunday, 1 is Monday. We map Sunday to 7.
-    let dayOfWeek = getDay(start);
-    if (dayOfWeek === 0) dayOfWeek = 7;
-    const gridColumn = dayOfWeek + 1; // +1 to skip the time labels column
+  // 3. Pre-calculate multi-lane layout for overlapping appointments
+  const layoutMap = useMemo(() => {
+    const parsed = turnos.map((turno) => {
+      const start = parseISO(turno.fecha_hora_inicio);
+      const end = turno.fecha_hora_fin ? parseISO(turno.fecha_hora_fin) : null;
 
-    // Row start: calculated from 8:00 AM
-    const minutesFromStart = (start.getHours() - START_HOUR) * 60 + start.getMinutes();
-    const rowStart = Math.floor(minutesFromStart / SLOT_DURATION_MINS) + 2; // +1 for header, +1 for 1-based CSS grid
+      let dayOfWeek = getDay(start);
+      if (dayOfWeek === 0) dayOfWeek = 7;
+      const gridColumn = dayOfWeek + 1; // +1 to skip the time labels column
 
-    // Row span: duration / slotDuration
-    let durationMins = SLOT_DURATION_MINS;
-    if (end) {
-      durationMins = differenceInMinutes(end, start);
+      const minutesFromStart = (start.getHours() - START_HOUR) * 60 + start.getMinutes();
+      const rowStart = Math.floor(minutesFromStart / SLOT_DURATION_MINS) + 2; // +1 for header, +1 for 1-based CSS grid
+
+      let durationMins = SLOT_DURATION_MINS;
+      if (end) {
+        durationMins = differenceInMinutes(end, start);
+      }
+      const rowSpan = Math.max(1, Math.round(durationMins / SLOT_DURATION_MINS));
+      const rowEnd = rowStart + rowSpan;
+
+      return {
+        turno,
+        gridColumn,
+        rowStart,
+        rowSpan,
+        rowEnd,
+      };
+    });
+
+    const result = new Map<string, { gridColumn: number; rowStart: number; rowSpan: number; lane: number; totalLanes: number }>();
+
+    // Group items by day column
+    const byColumn = new Map<number, typeof parsed>();
+    for (const item of parsed) {
+      const list = byColumn.get(item.gridColumn) || [];
+      list.push(item);
+      byColumn.set(item.gridColumn, list);
     }
-    const rowSpan = Math.max(1, Math.round(durationMins / SLOT_DURATION_MINS));
+
+    // For each day, detect overlapping groups and assign parallel lanes
+    byColumn.forEach((items) => {
+      items.sort((a, b) => a.rowStart - b.rowStart || b.rowEnd - a.rowEnd);
+
+      let cluster: typeof items = [];
+      let clusterEnd = -1;
+
+      const processCluster = (c: typeof items) => {
+        if (c.length === 0) return;
+        const laneEndTimes: number[] = [];
+        const assignments: { id: string; lane: number; item: typeof items[0] }[] = [];
+
+        for (const it of c) {
+          let assignedLane = -1;
+          for (let l = 0; l < laneEndTimes.length; l++) {
+            if (laneEndTimes[l] <= it.rowStart) {
+              assignedLane = l;
+              laneEndTimes[l] = it.rowEnd;
+              break;
+            }
+          }
+          if (assignedLane === -1) {
+            assignedLane = laneEndTimes.length;
+            laneEndTimes.push(it.rowEnd);
+          }
+          assignments.push({ id: it.turno.id, lane: assignedLane, item: it });
+        }
+
+        const totalLanes = Math.max(1, laneEndTimes.length);
+        for (const a of assignments) {
+          result.set(a.id, {
+            gridColumn: a.item.gridColumn,
+            rowStart: a.item.rowStart,
+            rowSpan: a.item.rowSpan,
+            lane: a.lane,
+            totalLanes,
+          });
+        }
+      };
+
+      for (const item of items) {
+        if (cluster.length > 0 && item.rowStart >= clusterEnd) {
+          processCluster(cluster);
+          cluster = [];
+          clusterEnd = -1;
+        }
+        cluster.push(item);
+        clusterEnd = Math.max(clusterEnd, item.rowEnd);
+      }
+      processCluster(cluster);
+    });
+
+    return result;
+  }, [turnos]);
+
+  // 4. Helper to position a turno in the CSS Grid with calculated lane width and offset
+  const getGridStyle = (turno: Turno): React.CSSProperties => {
+    const layout = layoutMap.get(turno.id);
+    if (!layout) {
+      return { display: "none" };
+    }
+
+    const { gridColumn, rowStart, rowSpan, lane, totalLanes } = layout;
+    const widthPercent = 100 / totalLanes;
+    const leftPercent = lane * widthPercent;
 
     return {
       gridColumn,
       gridRow: `${rowStart} / span ${rowSpan}`,
+      width: `calc(${widthPercent}% - 4px)`,
+      marginLeft: `calc(${leftPercent}% + 2px)`,
     };
   };
 
@@ -57,7 +143,7 @@ export function TimeGrid({ currentDate, turnos, onTurnoClick }: TimeGridProps & 
       case "pendiente": return "border-l-amber-500 bg-amber-500/20 text-amber-50";
       case "confirmado": return "border-l-emerald-500 bg-emerald-500/20 text-emerald-50";
       case "asistido": return "border-l-teal-500 bg-teal-500/20 text-teal-50";
-      case "cancelado": return "border-l-red-500 bg-red-500/20 text-red-50";
+      case "cancelado": return "border-l-red-500 bg-red-500/20 text-red-50 opacity-80";
       case "no_show": return "border-l-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-50";
       default: return "border-l-blue-500 bg-blue-500/20 text-blue-50";
     }
@@ -108,15 +194,16 @@ export function TimeGrid({ currentDate, turnos, onTurnoClick }: TimeGridProps & 
           </div>
         ))}
 
-        {/* TURNOS (Appointments) Rendered absolutely in their grid cells */}
+        {/* TURNOS (Appointments) Rendered in calculated multi-lane slots */}
         {turnos.map((turno) => (
           <div
             key={turno.id}
             style={getGridStyle(turno)}
             onClick={onTurnoClick ? () => onTurnoClick(turno) : undefined}
-            className={`z-10 m-0.5 p-1 px-1.5 rounded-r-md rounded-l-sm border-l-4 ${getBadgeStyle(turno.estado)} flex flex-col overflow-hidden hover:brightness-125 transition-all cursor-pointer shadow-sm`}
+            title={`${turno.pacientes?.nombre_completo || "Sin Nombre"} · ${turno.profesionales?.nombre || "Profesional"} (${turno.estado.toUpperCase()})`}
+            className={`z-10 m-0.5 p-1 px-1.5 rounded-r-md rounded-l-sm border-l-4 ${getBadgeStyle(turno.estado)} flex flex-col justify-between overflow-hidden hover:z-30 hover:scale-[1.02] hover:brightness-125 transition-all cursor-pointer shadow-sm`}
           >
-            <div className="flex justify-between items-center gap-1 w-full">
+            <div className="flex justify-between items-center gap-1 w-full min-w-0">
               <span className="text-[11px] font-semibold truncate leading-none">
                 {turno.pacientes?.nombre_completo || "Sin Nombre"}
               </span>
