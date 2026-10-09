@@ -272,6 +272,7 @@ export class TurnosService {
         turno_id: t.id,
         estado: t.estado,
         cuando: formatoParaPaciente(t.fecha_hora_inicio),
+        profesional_id: t.profesional_id, // para reprogramar con el mismo profesional (evaluación del 09/10)
         profesional: prof?.nombre ?? '',
         especialidad: prof?.especialidad ?? '',
       };

@@ -213,7 +213,15 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'miércoles' })).toEqual([]);
     await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'feriado' })).rejects.toMatchObject({ statusCode: 400 });
     const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica D' }).returning();
-    expect(await disponibilidadService.proximosHorarios(profesionalId, otra.id, { desde: fecha, dias: 7 })).toEqual([]);
+    await expect(disponibilidadService.proximosHorarios(profesionalId, otra.id, { desde: fecha, dias: 7 })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('M5-01: mis turnos informa el profesional_id y próximos horarios rechaza un profesional inexistente', async () => {
+    const [t] = await turnosService.proximosDelPaciente(clinicaId, paciente(70).telefono_whatsapp);
+    expect(t.profesional_id).toBe(profesionalId);
+    const semana = await disponibilidadService.proximosHorarios(t.profesional_id, clinicaId, { dias: 31 });
+    expect(semana.length).toBeGreaterThan(0);
+    await expect(disponibilidadService.proximosHorarios('e9f8a6a8-7a3b-4a0d-9f6a-1b4e6d9c7e2f', clinicaId, { dias: 7 })).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('M4-03: el filtro de día acepta frases como "el próximo lunes" y sigue rechazando valores sin día', async () => {

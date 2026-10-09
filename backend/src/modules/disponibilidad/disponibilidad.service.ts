@@ -5,7 +5,7 @@ import { rangoDiaLocal, partesLocales, DURACION_TURNO_MINUTOS } from '../../core
 import { DisponibilidadRepository } from './disponibilidad.repository.js';
 import { turnos } from '../../db/schema.js';
 import { GuardarDisponibilidadType } from './disponibilidad.schemas.js';
-import { ValidationError } from '../../core/errors.js';
+import { ValidationError, NotFoundError } from '../../core/errors.js';
 
 const NOMBRES_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const NOMBRES_DIA_SIN_TILDE = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
@@ -113,9 +113,13 @@ export class DisponibilidadService {
    * - desde: fecha local inicial; nunca anterior a hoy en Mendoza (por defecto, hoy).
    * - dias: ventana de búsqueda, entre 1 y 31 (por defecto 21).
    * - dia: filtra un día de la semana ("viernes", "el próximo viernes" o 5).
+   * - Un profesional inexistente, dado de baja o de otra clínica responde 404: una lista
+   *   vacía haría que el asistente informe "no hay horarios" (evaluación del 09/10).
    * Solo devuelve fechas con al menos un horario disponible.
    */
   async proximosHorarios(profesionalId: string, clinicaId: string, opciones: { desde?: string; dias?: number; dia?: string } = {}) {
+    const prof = await db.query.profesionales.findFirst({ where: (p, { eq: igual }) => igual(p.id, profesionalId) });
+    if (!prof || !prof.activo || prof.clinica_id !== clinicaId) throw new NotFoundError('Profesional no encontrado en esta clínica');
     const hoy = partesLocales(new Date()).fecha;
     if (opciones.desde !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(opciones.desde)) throw new ValidationError('desde debe tener formato YYYY-MM-DD');
     // M4-06: no se ofrecen fechas pasadas; las fechas ISO se comparan como texto
