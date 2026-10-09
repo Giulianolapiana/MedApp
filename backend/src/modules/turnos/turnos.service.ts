@@ -309,7 +309,7 @@ export class TurnosService {
   }
 
   /**
-   * Reprogramación pedida desde WhatsApp (M3-08): cambio atómico de turno.
+   * Reprogramación pedida desde WhatsApp (observación M3-05; PI-18 y PI-19): cambio atómico de turno.
    * En UNA transacción se cancela el turno anterior y se crea el nuevo; si el
    * alta falla (horario no ofrecido, ocupado, en el pasado), se revierte todo y
    * el turno anterior sigue vigente. El agente ya no encadena dos acciones.

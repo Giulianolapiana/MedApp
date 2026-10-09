@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Análisis complementario del modelo de comparadores (M3-07, tercera devolución).
+Análisis complementario del modelo de comparadores (observación M3-07 de la tercera devolución).
 
 No modifica simulacion_comparadores.py: reutiliza sus funciones y agrega dos lecturas.
 
 1. Grilla fina de Δc. Ubica el valor de aviso incremental con el que la mediana de la
-   reducción del ausentismo alcanza el umbral (a) del 40 %. Cada celda usa un generador
-   propio inicializado con la semilla, de modo que es reproducible por separado.
+   reducción del ausentismo alcanza el umbral (a) del 40 %. Usa los mismos generadores por
+   escenario que simulacion_comparadores.py (números aleatorios comunes), por lo que sus
+   celdas coinciden con las de la Tabla 21 y entre sí solo difieren por Δc.
 
 2. Variante sin ruido binomial. Reemplaza los sorteos binomiales del mes simulado por sus
    valores esperados. Separa la incertidumbre de los parámetros de la variabilidad
@@ -41,9 +42,11 @@ class SinRuido:
 
 
 def celda(semilla, escenarios, comparador, dc, sin_ruido=False):
-    rng = np.random.default_rng(semilla)
-    r = SinRuido(rng) if sin_ruido else rng
-    res = [base.escenario(r, comparador, dc) for _ in range(escenarios)]
+    envolver = SinRuido if sin_ruido else (lambda g: g)
+    res = []
+    for i in range(escenarios):
+        rp, rm = base.generadores(semilla, i)
+        res.append(base.escenario(envolver(rp), comparador, dc, envolver(rm)))
     red = np.array([x[0] for x in res])
     return dict(comparador=comparador, dc=dc, sin_ruido=sin_ruido,
                 reduccion_mediana=float(np.median(red)),

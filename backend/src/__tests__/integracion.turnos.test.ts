@@ -173,7 +173,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(await disponibilidadService.generarSlots(profesionalId, otra.id, fecha)).toHaveLength(0);
   });
 
-  it('M3-08: reprogramar por WhatsApp cancela el anterior y crea el nuevo en una sola operación', async () => {
+  it('PI-18: reprogramar por WhatsApp cancela el anterior y crea el nuevo en una sola operación', async () => {
     const tel = paciente(70).telefono_whatsapp;
     const original = await turnosService.crearWhatsapp({ clinica_id: clinicaId, telefono: tel, nombre_completo: 'Paciente Reprograma', profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T12:00:00` });
     // Un tercero no puede reprogramar el turno ajeno
@@ -188,7 +188,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(hist.some((h: any) => h.estado_hacia === 'cancelado' && h.motivo?.includes('Reprogramado'))).toBe(true);
   });
 
-  it('M3-08: si el horario nuevo no es válido o está ocupado, el turno anterior sigue vigente', async () => {
+  it('PI-19: si el horario nuevo no es válido o está ocupado, el turno anterior sigue vigente', async () => {
     const tel = paciente(71).telefono_whatsapp;
     const original = await turnosService.crearWhatsapp({ clinica_id: clinicaId, telefono: tel, nombre_completo: 'Paciente Rollback', profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T14:00:00` });
     // Horario fuera de la grilla: falla antes de tocar la base
@@ -201,13 +201,13 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect((await turnosService.obtenerHistorial(original.id, clinicaId)).length).toBe(1);
   });
 
-  it('M3-09: próximos horarios con el día de la semana calculado por el servidor', async () => {
+  it('PI-20: próximos horarios con el día de la semana calculado por el servidor', async () => {
     const semana = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 7 });
     expect(semana).toHaveLength(1); // la profesional de prueba atiende solo los lunes
     const [y, m, d] = fecha.split('-');
     expect(semana[0]).toMatchObject({ fecha, dia_semana: 'lunes', fecha_legible: `lunes ${d}/${m}/${y}` });
     expect(semana[0].horarios).not.toContain('10:00'); // ocupado por la prueba K-07
-    expect(semana[0].horarios).toContain('12:00'); // liberado por la reprogramación M3-08
+    expect(semana[0].horarios).toContain('12:00'); // liberado por la reprogramación de PI-18
     const lunes = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'Lunes' });
     expect(lunes.map((x: any) => x.dia_semana)).toEqual(['lunes', 'lunes']);
     expect(await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'miércoles' })).toEqual([]);
@@ -216,7 +216,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     await expect(disponibilidadService.proximosHorarios(profesionalId, otra.id, { desde: fecha, dias: 7 })).rejects.toMatchObject({ statusCode: 404 });
   });
 
-  it('M5-01: mis turnos informa el profesional_id y próximos horarios rechaza un profesional inexistente', async () => {
+  it('PI-23: mis turnos informa el profesional_id y próximos horarios rechaza un profesional inexistente', async () => {
     const [t] = await turnosService.proximosDelPaciente(clinicaId, paciente(70).telefono_whatsapp);
     expect(t.profesional_id).toBe(profesionalId);
     const semana = await disponibilidadService.proximosHorarios(t.profesional_id, clinicaId, { dias: 31 });
@@ -224,14 +224,14 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     await expect(disponibilidadService.proximosHorarios('e9f8a6a8-7a3b-4a0d-9f6a-1b4e6d9c7e2f', clinicaId, { dias: 7 })).rejects.toMatchObject({ statusCode: 404 });
   });
 
-  it('M4-03: el filtro de día acepta frases como "el próximo lunes" y sigue rechazando valores sin día', async () => {
+  it('PI-21: el filtro de día acepta frases como "el próximo lunes" y sigue rechazando valores sin día', async () => {
     const r = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'el próximo Lunes' });
     expect(r.length).toBeGreaterThan(0);
     expect(r.every((x: any) => x.dia_semana === 'lunes')).toBe(true);
     await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'pasado mañana' })).rejects.toMatchObject({ statusCode: 400 });
   });
 
-  it('M4-06: /disponibilidad/{id}/proximos exige la clave de servicio', async () => {
+  it('PI-22: /disponibilidad/{id}/proximos exige la clave de servicio', async () => {
     const { default: router } = await import('../modules/disponibilidad/disponibilidad.router.js');
     const url = `/${profesionalId}/proximos?clinica_id=${clinicaId}`;
     expect((await router.request(url)).status).toBe(401);
@@ -239,7 +239,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(ok.status).toBe(200);
   });
 
-  it('M4-06: no se ofrecen fechas pasadas y la ventana se limita a 31 días', async () => {
+  it('PI-22: no se ofrecen fechas pasadas y la ventana se limita a 31 días', async () => {
     const hoy = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
     const pasado = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: '2026-01-01', dias: 31 });
     expect(pasado.every((x: any) => x.fecha >= hoy)).toBe(true);

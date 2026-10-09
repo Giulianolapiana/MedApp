@@ -122,7 +122,7 @@ export class DisponibilidadService {
     if (!prof || !prof.activo || prof.clinica_id !== clinicaId) throw new NotFoundError('Profesional no encontrado en esta clínica');
     const hoy = partesLocales(new Date()).fecha;
     if (opciones.desde !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(opciones.desde)) throw new ValidationError('desde debe tener formato YYYY-MM-DD');
-    // M4-06: no se ofrecen fechas pasadas; las fechas ISO se comparan como texto
+    // PI-22: no se ofrecen fechas pasadas; las fechas ISO se comparan como texto
     const desde = opciones.desde && opciones.desde > hoy ? opciones.desde : hoy;
     const dias = Math.min(Math.max(Math.trunc(opciones.dias ?? 21) || 21, 1), 31);
     let filtroDia: number | undefined;

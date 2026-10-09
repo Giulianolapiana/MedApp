@@ -87,7 +87,7 @@ export function BackupsTab() {
                       {ETIQUETA[log.tipo_artefacto] ?? log.tipo_artefacto}
                     </h3>
                     <p className="text-xs text-gray-500">
-                      {new Date(log.creado_en).toLocaleString("es-AR", { timeZone: "America/Argentina/Mendoza" })}
+                      {new Date(log.creado_en).toLocaleString("es-AR", { timeZone: "America/Argentina/Mendoza", hourCycle: "h23" })}
                       {" · "}{log.tipo_ejecucion}
                       {tamanoLegible(log.tamano_bytes) ? ` · ${tamanoLegible(log.tamano_bytes)}` : ""}
                     </p>

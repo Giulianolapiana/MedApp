@@ -40,7 +40,7 @@ disponibilidadRouter.get('/:profId/slots', async (c) => {
 
 // GET /api/v1/disponibilidad/:profId/proximos?clinica_id=&dia=viernes&desde=YYYY-MM-DD&dias=21 — Servicio (WF-03)
 // Próximas fechas con horarios libres, con el día de la semana calculado por el servidor.
-// Requiere la clave de servicio (M4-06): recorre hasta 31 días y solo lo usa el asistente.
+// Requiere la clave de servicio (PI-22): recorre hasta 31 días y solo lo usa el asistente.
 disponibilidadRouter.get('/:profId/proximos', apiKeyMiddleware, async (c) => {
   const clinicaId = c.req.query('clinica_id');
   if (!clinicaId) throw new ValidationError('El parámetro clinica_id es requerido');

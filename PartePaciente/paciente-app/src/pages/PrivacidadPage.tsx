@@ -2,8 +2,8 @@ import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 
 /**
- * Política de privacidad mínima (hallazgo A-02). Los datos del responsable son
- * ficticios (entorno de demostración) y deben reemplazarse al implementar en un consultorio real.
+ * Política de privacidad mínima (hallazgo A-02). Durante la evaluación del Proyecto Integrador
+ * Final el responsable es su autor; al implementar en un consultorio, el responsable es el consultorio.
  */
 export function PrivacidadPage() {
   return (
@@ -11,7 +11,7 @@ export function PrivacidadPage() {
       <Navbar />
       <main className="container mx-auto px-4 py-12 max-w-3xl text-text-primary space-y-5 text-sm leading-relaxed">
         <h1 className="font-display text-3xl font-semibold">Política de privacidad</h1>
-        <p><strong>Responsable del tratamiento:</strong> Consultorio Médico Los Andes (entidad ficticia de demostración), Av. San Martín 1250, Ciudad de Mendoza, privacidad@consultorio-losandes.example.</p>
+        <p><strong>Responsable del tratamiento:</strong> durante la etapa de evaluación de este sistema, desarrollado como Proyecto Integrador Final de la Tecnicatura Universitaria en Programación (UTN, Facultad Regional Mendoza), el responsable es su autor, Giuliano La Piana (Ciudad de Mendoza), giulianolapianam@gmail.com. El «Consultorio Médico Los Andes» que menciona el asistente es un nombre de demostración. Si un consultorio adopta el sistema, ese consultorio pasa a ser el responsable y debe reemplazar estos datos.</p>
         <h2 className="font-semibold text-lg">Qué datos tratamos y para qué</h2>
         <p>Nombre y apellido, teléfono celular y correo electrónico, junto con la fecha, hora y profesional del turno.
           Se usan únicamente para registrar, recordar, confirmar, cancelar o reprogramar tus turnos.
@@ -25,7 +25,7 @@ export function PrivacidadPage() {
           y OpenAI (procesamiento de los mensajes del asistente virtual). Esta transferencia se realiza con el alcance
           previsto en el art. 12 de la Ley 25.326 y la Disposición DNPDP 60-E/2016.</p>
         <h2 className="font-semibold text-lg">Tus derechos</h2>
-        <p>Podés solicitar el acceso, la rectificación o la supresión de tus datos escribiendo a privacidad@consultorio-losandes.example.
+        <p>Podés solicitar el acceso, la rectificación o la supresión de tus datos escribiendo a giulianolapianam@gmail.com.
           La Agencia de Acceso a la Información Pública es el órgano de control de la Ley 25.326.</p>
         <h2 className="font-semibold text-lg">Conservación</h2>
         <p>Los datos se conservan mientras seas paciente del consultorio y durante los cinco años posteriores a la última atención.

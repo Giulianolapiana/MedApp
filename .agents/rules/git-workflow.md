@@ -13,5 +13,5 @@
    - Los envíos remotos deben ser siempre mediante push estándar: `git push`.
 
 3. **ETIQUETA DE ENTREGA:**
-   - La etiqueta **`entrega-3`** se crea exclusivamente al final de todo el proyecto, cuando esté todo terminado y probado.
-   - Ese tag es la versión inmutable citada en el **Anexo E** para la verificación del tribunal.
+   - Cada entrega al tribunal se identifica con una etiqueta anotada (`entrega-3`, `entrega-4`, …) creada cuando la entrega está terminada y probada.
+   - Una vez entregada, la etiqueta no se mueve: es la versión citada en el **Anexo E** para la verificación del tribunal.

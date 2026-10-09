@@ -79,6 +79,10 @@ En Supabase → Authentication → URL Configuration, agregar `https://panel.ver
 
 ## 4. n8n
 
+0. Variables del servicio de n8n en Dokploy: `GENERIC_TIMEZONE=America/Argentina/Mendoza` y
+   `TZ=America/Argentina/Mendoza`. Sin ellas, los disparadores programados (09:00, 15:00, 23:00) corren en UTC.
+   La app de OAuth de Google debe estar **en producción** (lo está desde el 09/10/2026): en modo de prueba, la autorización vence a
+   los siete días y el calendario deja de sincronizarse sin aviso (el nodo continúa ante error).
 1. Crear credencial **Header Auth** "MedApp API (x-api-key)": header `x-api-key`, valor = `N8N_API_KEY`.
 2. Importar los workflows de `n8n/` y reconectar credenciales (Google, Chatwoot, OpenAI). n8n ya no
    necesita credencial de PostgreSQL: el tablero se obtiene de la API.
@@ -111,8 +115,10 @@ En orden, desde el SQL Editor de Supabase (con backup previo):
 
 ## 6. Antes de abrir a pacientes
 
-- [ ] Rotar las credenciales que estuvieron en el historial de git (`.env` del commit `fee5d81`).
+- [x] Rotar las credenciales del `.env` que estuvo publicado antes de la reescritura de la historia (commit `fee5d81`, ya inexistente), incluida la contraseña de la base.
+- [ ] Dar de baja los profesionales de prueba y crear los usuarios del consultorio.
 - [ ] `N8N_API_KEY` nueva y distinta de la de desarrollo.
-- [ ] Número de WhatsApp Business verificado y plantilla del recordatorio aprobada.
-- [ ] Reemplazar los datos ficticios de `/privacidad` por los del consultorio real.
-- [ ] Prueba de restauración del respaldo documentada.
+- [ ] Número de WhatsApp Business verificado (la plantilla `recordatorio_turno` ya está aprobada).
+- [ ] App Secret de Meta configurado en la bandeja de Chatwoot (firma `X-Hub-Signature-256`).
+- [ ] Reemplazar en `/privacidad` y en el prompt de WF-03 los datos del autor y del consultorio de demostración por los del consultorio real.
+- [x] Prueba de restauración del respaldo documentada (`probar_restauracion.sh`, 08/10/2026).

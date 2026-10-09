@@ -77,7 +77,7 @@ turnosRouter.post('/whatsapp/:id/respuesta', apiKeyMiddleware, async (c) => {
   return c.json({ data });
 });
 
-// POST /api/v1/turnos/whatsapp/:id/reprogramacion — cambio atómico de turno (M3-08)
+// POST /api/v1/turnos/whatsapp/:id/reprogramacion — cambio atómico de turno (observación M3-05; prueba PI-18)
 const ReprogramacionWhatsapp = z.object({
   clinica_id: z.string().uuid(),
   telefono: z.string().min(8),
