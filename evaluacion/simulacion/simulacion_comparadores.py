@@ -14,7 +14,9 @@ típico confirma la agenda por teléfono. Este modelo:
       C1 · consultorio que confirma por teléfono a una parte de los pacientes.
     En C1 la llamada también es bidireccional: el paciente contactado puede
     avisar con la misma probabilidad (c0 + Δc) que por WhatsApp. La ventaja de
-    MedApp frente a C1 se limita, así, a la cobertura y al efecto del mensaje.
+    MedApp frente a C1 proviene, así, de la mayor cobertura del envío
+    automático; por persona alcanzada, la llamada tiene un efecto igual o algo
+    mayor que el mensaje (RR mensaje/llamada 0,99).
   · Presenta Δc como escenario (0; 0,10; 0,25; 0,40), porque no se encontró un
     ancla bibliográfica para su valor.
 
@@ -184,7 +186,7 @@ def main():
     ax[0].set_xlabel("Aviso incremental atribuible al canal, Δc (%)"); ax[0].set_ylabel("Reducción relativa del ausentismo (%)")
     ax[0].set_title("a) Reducción mediana e intervalo del 90 %"); ax[0].legend(fontsize=8)
     ax[1].set_xlabel("Aviso incremental atribuible al canal, Δc (%)"); ax[1].set_ylabel("Escenarios que cumplen el umbral (a) (%)")
-    ax[1].set_ylim(0, 100); ax[1].set_title("b) Probabilidad de cumplir el umbral (a)"); ax[1].legend(fontsize=8)
+    ax[1].set_ylim(0, 100); ax[1].set_title("b) Proporción de escenarios que cumplen (a)"); ax[1].legend(fontsize=8)
     fig.tight_layout(); fig.savefig(out / "fig_comparadores.png", dpi=200); plt.close(fig)
 
     pct = lambda x: f"{x * 100:5.1f} %"
