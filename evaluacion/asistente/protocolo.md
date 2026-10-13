@@ -1,6 +1,6 @@
 # Protocolo de la batería final del asistente (WF-03)
 
-Fijado el 09/10/2026, antes de ejecutar la batería. Reemplaza la batería exploratoria del 09/10/2026 (ver `bateria_exploratoria_2026-10-09.md`).
+Fijado el 09/10/2026, antes de ejecutar la batería. Reemplaza la batería exploratoria del 09/10/2026 (ver `bateria_exploratoria_2026-10-09.md`). Resultados en `resultados.md`.
 
 ## Condiciones
 

@@ -21,14 +21,14 @@ típico confirma la agenda por teléfono. Este modelo:
 El script original (simulacion_medapp.py) se conserva sin cambios para que los
 resultados de la versión anterior sigan siendo reproducibles.
 
-Números aleatorios comunes: cada escenario i usa dos generadores propios,
-derivados de la semilla con SeedSequence(semilla, spawn_key=(i, 0)) para los
-parámetros y spawn_key=(i, 1) para el mes simulado. Así, en todas las celdas
-(comparador × Δc) el escenario i tiene los mismos parámetros y los mismos sorteos
-del mes, y las diferencias entre celdas se deben solo a Δc y al comparador; en C0
-la línea base es idéntica en todas las celdas. Con --rng secuencial se reproducen
-las tablas de la tercera entrega, que usaban un único generador para todas las
-celdas.
+Números aleatorios comunes: cada escenario i usa un generador propio para los
+parámetros (SeedSequence(semilla, spawn_key=(i, 0))) y otro para cada mes simulado
+(spawn_key=(i, 1)), que se reinicia al empezar cada mes. Así, en todas las celdas
+(comparador × Δc) el escenario i tiene los mismos parámetros, y la línea base y el mes con
+MedApp parten de los mismos sorteos (la misma intención de ausencia); los sorteos coinciden
+hasta el primero que depende de Δc o del comparador. En C0 la línea base es idéntica en
+todas las celdas. Con --rng secuencial se reproduce el esquema previo, con un único
+generador para todas las celdas.
 
 Uso:  python simulacion_comparadores.py --escenarios 10000 --semilla 20260916
 Salida: resultados/comparadores.json, comparadores_grilla.csv, fig_comparadores.png
@@ -94,13 +94,19 @@ def mes(rng, reservados, p0, alcance, f, c_alcanzados, c0, reocupa):
 
 
 def generadores(semilla, i):
-    """Generadores del escenario i: (parámetros, mes simulado). Independientes de la celda."""
-    return (np.random.default_rng(np.random.SeedSequence(semilla, spawn_key=(i, 0))),
-            np.random.default_rng(np.random.SeedSequence(semilla, spawn_key=(i, 1))))
+    """Generadores del escenario i, independientes de la celda: (parámetros, fábrica del mes).
+    La fábrica devuelve un generador nuevo, siempre desde el mismo estado, para cada mes que se
+    simula: la línea base y MedApp parten de los mismos números (misma intención de ausencia) y
+    cada celda repite exactamente esos sorteos hasta el primero que depende de Δc o del comparador."""
+    def mes_rng():
+        return np.random.default_rng(np.random.SeedSequence(semilla, spawn_key=(i, 1)))
+    return np.random.default_rng(np.random.SeedSequence(semilla, spawn_key=(i, 0))), mes_rng
 
 
 def escenario(rng, comparador, dc, rng_mes=None):
-    rng_mes = rng if rng_mes is None else rng_mes
+    """rng_mes: fábrica de generadores para cada mes (números aleatorios comunes) o None
+    (esquema secuencial: el mismo generador para todo)."""
+    nuevo = (lambda: rng) if rng_mes is None else rng_mes
     p0 = rng.uniform(0.23, 0.34)
     rr_msg = lognormal_ic(rng, 1.14, 1.03, 1.26)
     rr_msg_tel = lognormal_ic(rng, 0.99, 0.95, 1.02)
@@ -115,10 +121,10 @@ def escenario(rng, comparador, dc, rng_mes=None):
     f_tel = fraccion_convertida(p0, rr_msg / rr_msg_tel)   # llamada ≈ mensaje
 
     if comparador == "C0":
-        ns_b, oc_b = mes(rng_mes, reservados, p0, 0.0, 0.0, c0, c0, reocupa)
+        ns_b, oc_b = mes(nuevo(), reservados, p0, 0.0, 0.0, c0, c0, reocupa)
     else:
-        ns_b, oc_b = mes(rng_mes, reservados, p0, cob_tel, f_tel, c0 + dc, c0, reocupa)
-    ns_m, oc_m = mes(rng_mes, reservados, p0, entrega, f_msg, c0 + dc, c0, reocupa)
+        ns_b, oc_b = mes(nuevo(), reservados, p0, cob_tel, f_tel, c0 + dc, c0, reocupa)
+    ns_m, oc_m = mes(nuevo(), reservados, p0, entrega, f_msg, c0 + dc, c0, reocupa)
     return 1 - ns_m / ns_b, oc_m / oc_b - 1, ns_b, ns_m
 
 

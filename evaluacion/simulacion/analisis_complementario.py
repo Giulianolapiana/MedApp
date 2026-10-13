@@ -45,8 +45,8 @@ def celda(semilla, escenarios, comparador, dc, sin_ruido=False):
     envolver = SinRuido if sin_ruido else (lambda g: g)
     res = []
     for i in range(escenarios):
-        rp, rm = base.generadores(semilla, i)
-        res.append(base.escenario(envolver(rp), comparador, dc, envolver(rm)))
+        rp, fabrica = base.generadores(semilla, i)
+        res.append(base.escenario(envolver(rp), comparador, dc, lambda: envolver(fabrica())))
     red = np.array([x[0] for x in res])
     return dict(comparador=comparador, dc=dc, sin_ruido=sin_ruido,
                 reduccion_mediana=float(np.median(red)),

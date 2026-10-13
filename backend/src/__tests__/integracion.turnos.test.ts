@@ -1,7 +1,8 @@
 // Tipos laxos: los módulos se importan de forma diferida en beforeAll.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Pruebas de integración contra PostgreSQL real (K-07, K-06, A-01, A-05, A-10).
+ * Pruebas de integración contra PostgreSQL real. Cada prueba lleva el ID de la Tabla 18 de la tesis
+ * (PI-01 a PI-24) y, entre paréntesis, la observación o el hallazgo que la originó.
  * Se ejecutan solo con INTEGRACION=1 y una base de PRUEBA con la migración aplicada:
  *   INTEGRACION=1 DATABASE_URL=postgresql://.../medapp_test pnpm test
  */
@@ -36,7 +37,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     clinicaId = c.id; profesionalId = p.id;
   });
 
-  it('K-07: 20 reservas simultáneas del mismo horario → 1 aceptada, 19 rechazadas con 409', async () => {
+  it('PI-01 (K-07): 20 reservas simultáneas del mismo horario → 1 aceptada, 19 rechazadas con 409', async () => {
     const intentos = Array.from({ length: 20 }, (_, i) =>
       turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T10:00:00`, consentimiento_privacidad: true, paciente: paciente(i) }, clinicaId)
     );
@@ -48,7 +49,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(rechazos.every(x => x.reason?.statusCode === 409)).toBe(true);
   });
 
-  it('A-01: 10:00 de Mendoza se guarda como 13:00 UTC y el slot 10:00 figura ocupado', async () => {
+  it('PI-02 (A-01): 10:00 de Mendoza se guarda como 13:00 UTC y el slot 10:00 figura ocupado', async () => {
     const [t] = await db.select().from(schema.turnos);
     expect(new Date(t.fecha_hora_inicio.replace(' ', 'T').replace(/\+00$/, 'Z')).toISOString()).toBe(`${fecha}T13:00:00.000Z`);
     const slots = await disponibilidadService.generarSlots(profesionalId, clinicaId, fecha);
@@ -56,7 +57,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(slots.find((s: any) => s.hora === '10:30')?.disponible).toBe(true);
   });
 
-  it('A-04: una reserva pública no sobrescribe el nombre de un paciente existente', async () => {
+  it('PI-03 (A-04): una reserva pública no sobrescribe el nombre de un paciente existente', async () => {
     const tel = paciente(99).telefono_whatsapp;
     await turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:00:00`, consentimiento_privacidad: true, paciente: { nombre_completo: 'Nombre Original', telefono_whatsapp: tel } }, clinicaId);
     await turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:00:00`, consentimiento_privacidad: true, paciente: { nombre_completo: 'Intruso', telefono_whatsapp: tel, email: 'x@x.com' } }, clinicaId);
@@ -64,7 +65,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(p?.nombre_completo).toBe('Nombre Original');
   });
 
-  it('K-06: WhatsApp solo puede confirmar turnos del teléfono remitente y queda registrado', async () => {
+  it('PI-04 (K-06): WhatsApp solo puede confirmar turnos del teléfono remitente y queda registrado', async () => {
     const tel = paciente(99).telefono_whatsapp;
     const [propio] = await turnosService.proximosDelPaciente(clinicaId, tel);
     await expect(turnosService.responderDesdeWhatsapp(clinicaId, propio.turno_id, '+5492619999999', 'confirmado')).rejects.toMatchObject({ statusCode: 404 });
@@ -74,7 +75,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(logs.map((l: any) => l.tipo)).toContain('confirmacion');
   });
 
-  it('K-04: cancelar libera el horario y permite reprogramar', async () => {
+  it('PI-05 (K-04): cancelar libera el horario y permite reprogramar', async () => {
     const tel = paciente(99).telefono_whatsapp;
     const turnos = await turnosService.proximosDelPaciente(clinicaId, tel);
     const t11 = turnos.find((t: any) => t.cuando.includes('11:00'))!;
@@ -83,7 +84,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(nuevo.estado).toBe('pendiente');
   });
 
-  it('K-06/A-02: un turno reservado en la web con "261..." se gestiona desde WhatsApp "+549261..." y guarda el consentimiento', async () => {
+  it('PI-06 (K-06/A-02): un turno reservado en la web con "261..." se gestiona desde WhatsApp "+549261..." y guarda el consentimiento', async () => {
     await turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:30:00`, consentimiento_privacidad: true, paciente: { nombre_completo: 'Ana Web', telefono_whatsapp: '2614123456' } }, clinicaId);
     const turnos = await turnosService.proximosDelPaciente(clinicaId, '+5492614123456');
     expect(turnos).toHaveLength(1);
@@ -93,13 +94,13 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(ReservaPublicaRequest.safeParse({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T11:30:00`, paciente: { nombre_completo: 'Sin Consentimiento', telefono_whatsapp: '2614000000' } }).success).toBe(false);
   });
 
-  it('A-10: la base rechaza transiciones inválidas aunque se salteen la API', async () => {
+  it('PI-07 (A-10): la base rechaza transiciones inválidas aunque se salteen la API', async () => {
     const [cancelado] = await db.select().from(schema.turnos).where(sql`estado = 'cancelado'`);
     const error = await db.execute(sql`UPDATE turnos SET estado = 'confirmado' WHERE id = ${cancelado.id}`).then(() => null, (e: any) => e);
     expect(String(error?.cause?.message ?? error?.message)).toMatch(/Transición de estado inválida/);
   });
 
-  it('A-05: el recordatorio de un turno se registra una sola vez', async () => {
+  it('PI-08 (A-05): el recordatorio de un turno se registra una sola vez', async () => {
     const pendientes = await turnosService.obtenerTurnosParaRecordatorio(fecha);
     expect(pendientes.length).toBeGreaterThan(0);
     const id = pendientes[0].turno_id;
@@ -110,7 +111,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(pendientes[0].cuando).toMatch(/\d{2}:\d{2} hs/);
   });
 
-  it('A2-01: el endpoint público no acepta otro canal ni reservas sin consentimiento; el panel siempre registra canal manual', async () => {
+  it('PI-09 (A2-01): el endpoint público no acepta otro canal ni reservas sin consentimiento; el panel siempre registra canal manual', async () => {
     const { ReservaPublicaRequest } = await import('../modules/turnos/turnos.schemas.js');
     const base = { profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T15:00:00`, paciente: { nombre_completo: 'Canal Falso', telefono_whatsapp: '2614777777' } };
     expect(ReservaPublicaRequest.safeParse({ ...base, consentimiento_privacidad: true, canal_reserva: 'whatsapp' }).success).toBe(false);
@@ -120,7 +121,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(manual.canal_reserva).toBe('manual');
   });
 
-  it('A2-02: un mismo teléfono no puede reservar más de 3 turnos por hora (límite calculado en la base)', async () => {
+  it('PI-10 (A2-02): un mismo teléfono no puede reservar más de 3 turnos por hora (límite calculado en la base)', async () => {
     const tel = '2614555555';
     for (const h of ['15:30', '16:00', '16:30']) {
       await turnosService.crearWhatsapp({ clinica_id: clinicaId, profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T${h}:00`, nombre_completo: 'Límite', telefono: tel });
@@ -129,7 +130,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
       .rejects.toMatchObject({ statusCode: 429 });
   });
 
-  it('A2-05: un recordatorio fallido no bloquea el reintento y el estado de entrega se actualiza', async () => {
+  it('PI-11 (A2-05): un recordatorio fallido no bloquea el reintento y el estado de entrega se actualiza', async () => {
     const pendientes = await turnosService.obtenerTurnosParaRecordatorio(fecha);
     const t = pendientes[0];
     expect(t).toBeTruthy();
@@ -142,23 +143,23 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(log?.estado_entrega).toBe('entregado');
   });
 
-  it('A2-06: el tablero de agenda se obtiene por la API con fecha y hora de Mendoza', async () => {
+  it('PI-12 (A2-06): el tablero de agenda se obtiene por la API con fecha y hora de Mendoza', async () => {
     const filas = await turnosService.tablero(clinicaId, 30); // la fecha de prueba está a más de 14 días
     expect(filas.length).toBeGreaterThan(0);
     expect(filas.some((f: any) => f.hora === '10:00')).toBe(true);
   });
-  it('A3-01 (T1): rechaza una reserva web en un día y horario que el profesional no atiende', async () => {
+  it('PI-13 (A3-01, T1): rechaza una reserva web en un día y horario que el profesional no atiende', async () => {
     const domingo = new Date(base.getTime() - 86400000).toISOString().slice(0, 10);
     await expect(turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${domingo}T03:17:00`, consentimiento_privacidad: true, paciente: paciente(71) }, clinicaId))
       .rejects.toMatchObject({ statusCode: 400 });
   });
 
-  it('A3-01 (T2): rechaza una reserva por WhatsApp fuera de la grilla de 30 minutos', async () => {
+  it('PI-14 (A3-01, T2): rechaza una reserva por WhatsApp fuera de la grilla de 30 minutos', async () => {
     await expect(turnosService.crearWhatsapp({ clinica_id: clinicaId, profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T10:07:00`, nombre_completo: 'Hora Rara', telefono: '2614111111' }))
       .rejects.toMatchObject({ statusCode: 400 });
   });
 
-  it('A3-01 (T3): rechaza una reserva con un profesional dado de baja y no le ofrece horarios', async () => {
+  it('PI-15 (A3-01, T3): rechaza una reserva con un profesional dado de baja y no le ofrece horarios', async () => {
     const [baja] = await db.insert(schema.profesionales).values({ nombre: 'Dr. Baja', especialidad: 'Clínica', clinica_id: clinicaId, activo: false }).returning();
     await db.insert(schema.disponibilidad).values({ profesional_id: baja.id, clinica_id: clinicaId, dia_semana: 1, horario_inicio: '09:00', horario_fin: '12:00' });
     await expect(turnosService.crearPublico({ profesional_id: baja.id, fecha_hora_inicio: `${fecha}T09:00:00`, consentimiento_privacidad: true, paciente: paciente(72) }, clinicaId))
@@ -166,11 +167,22 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(await disponibilidadService.generarSlots(baja.id, clinicaId, fecha)).toHaveLength(0);
   });
 
-  it('A3-01 (T4): rechaza una reserva con un profesional de otra clínica', async () => {
+  it('PI-16 (A3-01, T4): rechaza una reserva con un profesional de otra clínica', async () => {
     const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica B' }).returning();
     await expect(turnosService.crearPublico({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T09:00:00`, consentimiento_privacidad: true, paciente: paciente(73) }, otra.id))
       .rejects.toMatchObject({ statusCode: 400 });
     expect(await disponibilidadService.generarSlots(profesionalId, otra.id, fecha)).toHaveLength(0);
+  });
+
+  it('PI-24 (RN-06): el panel tampoco registra turnos fuera de la disponibilidad ni con profesionales de baja', async () => {
+    const domingo = new Date(base.getTime() - 86400000).toISOString().slice(0, 10);
+    await expect(turnosService.crearManual({ profesional_id: profesionalId, fecha_hora_inicio: `${domingo}T10:00:00`, paciente: paciente(74) }, clinicaId))
+      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(turnosService.crearManual({ profesional_id: profesionalId, fecha_hora_inicio: `${fecha}T10:07:00`, paciente: paciente(74) }, clinicaId))
+      .rejects.toMatchObject({ statusCode: 400 });
+    const [baja] = await db.insert(schema.profesionales).values({ nombre: 'Dr. Baja Panel', especialidad: 'Clínica', clinica_id: clinicaId, activo: false }).returning();
+    await expect(turnosService.crearManual({ profesional_id: baja.id, fecha_hora_inicio: `${fecha}T11:00:00`, paciente: paciente(74) }, clinicaId))
+      .rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('PI-18: reprogramar por WhatsApp cancela el anterior y crea el nuevo en una sola operación', async () => {
@@ -231,7 +243,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'pasado mañana' })).rejects.toMatchObject({ statusCode: 400 });
   });
 
-  it('PI-22: /disponibilidad/{id}/proximos exige la clave de servicio', async () => {
+  it('PI-22 (a): /disponibilidad/{id}/proximos exige la clave de servicio', async () => {
     const { default: router } = await import('../modules/disponibilidad/disponibilidad.router.js');
     const url = `/${profesionalId}/proximos?clinica_id=${clinicaId}`;
     expect((await router.request(url)).status).toBe(401);
@@ -239,7 +251,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(ok.status).toBe(200);
   });
 
-  it('PI-22: no se ofrecen fechas pasadas y la ventana se limita a 31 días', async () => {
+  it('PI-22 (b): no se ofrecen fechas pasadas y la ventana se limita a 31 días', async () => {
     const hoy = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
     const pasado = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: '2026-01-01', dias: 31 });
     expect(pasado.every((x: any) => x.fecha >= hoy)).toBe(true);
@@ -248,7 +260,7 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     expect(largo.every((x: any) => x.fecha < tope)).toBe(true);
   });
 
-  it('B3-01: el historial de un turno no se entrega a otra clínica', async () => {
+  it('PI-17 (B3-01): el historial de un turno no se entrega a otra clínica', async () => {
     const [t] = await db.select().from(schema.turnos).limit(1);
     const [otra] = await db.insert(schema.clinicas).values({ nombre: 'Clínica C' }).returning();
     await expect(turnosService.obtenerHistorial(t.id, otra.id)).rejects.toMatchObject({ statusCode: 404 });
