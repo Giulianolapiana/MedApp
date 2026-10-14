@@ -2,7 +2,8 @@
 
 Ejecutada según `protocolo.md`. Calificación del primer intento por el autor, con los criterios del
 protocolo (Correcto / Parcial / Incorrecto); un caso cuyo comportamiento esperado no pudo observarse
-se registra como «No evaluable». Teléfonos y nombres de pacientes omitidos.
+se registra como «No evaluable». Las capturas de las 20 conversaciones están en `capturas/`, con el nombre de la persona
+del teléfono B y el número de teléfono del caso 14 ocultos.
 
 ## Condiciones registradas
 
@@ -19,11 +20,18 @@ se registra como «No evaluable». Teléfonos y nombres de pacientes omitidos.
   esa condición no figuraba en el protocolo.
 - Con una sola profesional de pediatría activa, el caso 8 no permite observar el comportamiento esperado
   (elegir el horario más cercano entre varios pediatras): se registra como «No evaluable».
-- En el caso 10, el pedido se repitió una vez más tarde (12:44); se califica solo el primer intento.
+- En el caso 10, el pedido se repitió una vez más tarde (12:44), con la misma respuesta; se califica solo el primer intento
+  (`capturas/B_2_caso11_y_repeticion10.png`).
+- En el caso 1 se eligió «jueves a las 9» y no el primer horario ofrecido, como fijaba el protocolo.
+- Algunos mensajes iniciales se escribieron con errores de tipeo («si telefono», «pbras sociales») y, en el caso 14,
+  con otro número de teléfono que el del protocolo. Ninguno de estos desvíos cambia el pedido evaluado.
+- La exclusión del caso 8 se decidió después de ejecutarlo; por eso el resultado se informa sobre los 20 casos previstos
+  y sobre los 19 evaluables.
 - El protocolo fijaba «el commit de la etiqueta entrega-4», que ese día era `d48fa7a`. La API desplegada durante la
   batería era la de `15f4824`, posterior; entre ambos commits el código del backend solo cambia en comentarios y nombres
   de prueba, y el cambio de la simulación no afecta al asistente.
-- La captura de cada caso se conserva en el registro del autor; en este archivo se informa la ejecución y la hora.
+- Los números de ejecución solo pueden cotejarse con acceso a la instancia de n8n; las capturas permiten revisar
+  cada conversación.
 
 ## Resultados
 
@@ -50,7 +58,25 @@ se registra como «No evaluable». Teléfonos y nombres de pacientes omitidos.
 | 19 | B | 12:55 | 1448 | Correcto | — | Deriva la conversación |
 | 20 | B | 12:57 | 1458 | Incorrecto | No | Reserva sin resumen ni confirmación previa; repite el aviso de privacidad |
 
-Resumen: 19 casos evaluables; 15 correctos (79 %; intervalo de Wilson al 95 %: 57 % a 92 %), 2 parciales y 2 incorrectos. Confirmación previa en 3 de las 4
+Resumen: sobre los 20 casos previstos, 15 correctos (75 %; intervalo de Wilson al 95 %: 53 % a 89 %), 2 parciales,
+2 incorrectos y 1 no evaluable. Sobre los 19 casos evaluables, 15 correctos (79 %; 57 % a 92 %). Confirmación previa en 3 de las 4
 operaciones que la requerían (casos 1, 4, 7 y 20). Voseo en todos los casos. Las 20 ejecuciones terminaron
 como «Succeeded» en n8n. El intervalo se informa porque el protocolo lo prevé, pero la proporción es descriptiva: los casos
 fueron elegidos por el autor y no son una muestra aleatoria de conversaciones reales.
+
+## Capturas
+
+| Archivo | Casos |
+|---|---|
+| `capturas/A_1_caso01.png` | 1 (inicio) |
+| `capturas/A_2_casos01-03.png` | 1 (fin), 2 y 3 (pedido) |
+| `capturas/A_3_casos03-04.png` | 3 (respuesta) y 4 |
+| `capturas/A_4_casos04-07.png` | 4 (resultado), 5, 6 y 7 (pedido) |
+| `capturas/A_5_casos07-08.png` | 7 y 8 |
+| `capturas/A_6_caso08.png` | 8 (fin) |
+| `capturas/B_1_casos09-10.png` | 9 y 10 |
+| `capturas/B_2_caso11_y_repeticion10.png` | 11 y repetición del pedido del caso 10 |
+| `capturas/B_3_casos12-13.png` | 12 y 13 |
+| `capturas/B_4_casos13-16.png` | 13 (fin), 14, 15 y 16 |
+| `capturas/B_5_casos16-19.png` | 16 (respuesta), 17, 18 y 19 (pedido) |
+| `capturas/B_6_casos19-20.png` | 19 (derivación) y 20 |
