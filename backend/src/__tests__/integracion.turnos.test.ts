@@ -236,11 +236,14 @@ describe.skipIf(!activo)('Integración: turnos contra PostgreSQL', () => {
     await expect(disponibilidadService.proximosHorarios('e9f8a6a8-7a3b-4a0d-9f6a-1b4e6d9c7e2f', clinicaId, { dias: 7 })).rejects.toMatchObject({ statusCode: 404 });
   });
 
-  it('PI-21: el filtro de día acepta frases como "el próximo lunes" y sigue rechazando valores sin día', async () => {
+  it('PI-21: el filtro de día acepta frases como "el próximo lunes" y rechaza valores sin día o con más de un día', async () => {
     const r = await disponibilidadService.proximosHorarios(profesionalId, clinicaId, { desde: fecha, dias: 14, dia: 'el próximo Lunes' });
     expect(r.length).toBeGreaterThan(0);
     expect(r.every((x: any) => x.dia_semana === 'lunes')).toBe(true);
     await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'pasado mañana' })).rejects.toMatchObject({ statusCode: 400 });
+    // B4-02: una frase con más de un día no se resuelve eligiendo el primero de la lista
+    await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'el sábado o el domingo' })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(disponibilidadService.proximosHorarios(profesionalId, clinicaId, { dia: 'no el lunes, el martes' })).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('PI-22 (a): /disponibilidad/{id}/proximos exige la clave de servicio', async () => {

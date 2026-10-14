@@ -112,7 +112,8 @@ export class DisponibilidadService {
    * tiene que deducir qué día cae cada fecha (error observado el 07/10: "viernes 14").
    * - desde: fecha local inicial; nunca anterior a hoy en Mendoza (por defecto, hoy).
    * - dias: ventana de búsqueda, entre 1 y 31 (por defecto 21).
-   * - dia: filtra un día de la semana ("viernes", "el próximo viernes" o 5).
+   * - dia: filtra un día de la semana ("viernes", "el próximo viernes" o 5); una frase
+   *   con más de un día ("el sábado o el domingo") responde 400 (B4-02).
    * - Un profesional inexistente, dado de baja o de otra clínica responde 404: una lista
    *   vacía haría que el asistente informe "no hay horarios" (evaluación del 09/10).
    * Solo devuelve fechas con al menos un horario disponible.
@@ -128,9 +129,18 @@ export class DisponibilidadService {
     let filtroDia: number | undefined;
     if (opciones.dia !== undefined && opciones.dia !== '') {
       const norm = opciones.dia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-      filtroDia = /^[0-6]$/.test(norm)
-        ? Number(norm)
-        : NOMBRES_DIA_SIN_TILDE.findIndex(d => norm === d || norm.includes(d));
+      if (/^[0-6]$/.test(norm)) {
+        filtroDia = Number(norm);
+      } else {
+        // B4-02: se buscan palabras completas y, si la frase nombra más de un día
+        // («el sábado o el domingo», «no el lunes, el martes»), se rechaza para que el
+        // asistente pregunte, en lugar de elegir el primero de la lista.
+        const mencionados = NOMBRES_DIA_SIN_TILDE
+          .map((nombre, i) => (new RegExp(`\\b${nombre}\\b`).test(norm) ? i : -1))
+          .filter(i => i >= 0);
+        if (mencionados.length > 1) throw new ValidationError('dia menciona más de un día de la semana; indicá uno solo');
+        filtroDia = mencionados.length === 1 ? mencionados[0] : -1;
+      }
       if (filtroDia < 0) throw new ValidationError('dia debe ser un día de la semana (lunes…domingo) o un número de 0 a 6');
     }
     const [y, m, d] = desde.split('-').map(Number);
