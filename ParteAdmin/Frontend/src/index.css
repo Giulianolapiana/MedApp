@@ -59,3 +59,27 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* ---- Animación de entrada ----
+   Las páginas usan `animate-in fade-in` (sintaxis de tailwindcss-animate),
+   pero ese plugin no está instalado: las clases no hacían nada. */
+@keyframes medapp-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-in.fade-in {
+  animation: medapp-fade-in 300ms ease-out both;
+}
+
+/* ---- Foco visible para navegación por teclado ---- */
+:focus-visible {
+  outline: 2px solid var(--color-accent-hover);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

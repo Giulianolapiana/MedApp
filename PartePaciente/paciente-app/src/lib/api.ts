@@ -15,7 +15,6 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   
   // Añadir clinica_id a los query params automáticamente para todas las peticiones
   url.searchParams.append('clinica_id', clinicaId);
-  console.log('>>> fetchApi url:', url.toString());
 
   const response = await fetch(url.toString(), {
     ...options,

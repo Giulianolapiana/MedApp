@@ -53,17 +53,19 @@ export function Paso4Datos() {
   return (
     <div className="p-6">
       {errorSubmit && (
-        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm">
+        <div role="alert" className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm">
           {errorSubmit}
         </div>
       )}
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Nombre *</label>
+            <label htmlFor="campo-nombre" className="block text-sm font-medium text-text-primary mb-1">Nombre *</label>
             <input 
               type="text" 
               name="nombre"
+              id="campo-nombre"
+              autoComplete="given-name"
               required
               value={formData.nombre}
               onChange={handleChange}
@@ -72,10 +74,12 @@ export function Paso4Datos() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Apellido *</label>
+            <label htmlFor="campo-apellido" className="block text-sm font-medium text-text-primary mb-1">Apellido *</label>
             <input 
               type="text" 
               name="apellido"
+              id="campo-apellido"
+              autoComplete="family-name"
               required
               value={formData.apellido}
               onChange={handleChange}
@@ -84,10 +88,12 @@ export function Paso4Datos() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Celular *</label>
+            <label htmlFor="campo-celular" className="block text-sm font-medium text-text-primary mb-1">Celular *</label>
             <input 
               type="tel" 
               name="celular"
+              id="campo-celular"
+              autoComplete="tel-national"
               required
               pattern="[0-9]{8,15}"
               value={formData.celular}
@@ -97,10 +103,12 @@ export function Paso4Datos() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Email *</label>
+            <label htmlFor="campo-email" className="block text-sm font-medium text-text-primary mb-1">Email *</label>
             <input 
               type="email" 
               name="email"
+              id="campo-email"
+              autoComplete="email"
               required
               value={formData.email}
               onChange={handleChange}

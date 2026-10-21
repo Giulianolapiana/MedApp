@@ -1,3 +1,4 @@
+import { useEscape } from "../../../hooks/useEscape";
 import { X } from "lucide-react";
 import { useState } from "react";
 import type { Paciente, PacienteInsert } from "../hooks/usePacientes";
@@ -9,6 +10,7 @@ interface PacienteModalProps {
 }
 
 export function PacienteModal({ paciente, onClose, onSave }: PacienteModalProps) {
+  useEscape(onClose);
   const [formData, setFormData] = useState<Partial<PacienteInsert>>({
     nombre_completo: paciente?.nombre_completo || "",
     telefono_whatsapp: paciente?.telefono_whatsapp || "",
@@ -39,12 +41,12 @@ export function PacienteModal({ paciente, onClose, onSave }: PacienteModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#121212] shadow-2xl overflow-hidden">
+      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl border border-white/10 bg-[#121212] shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-[#1a1a1a]">
           <h2 className="text-lg font-bold font-[var(--font-display)] text-white">
             {paciente ? "Editar Paciente" : "Nuevo Paciente"}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button type="button" onClick={onClose} aria-label="Cerrar" className="text-gray-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>

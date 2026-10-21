@@ -9,7 +9,7 @@ import { CtaSection } from '../components/home/CtaSection';
 export function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      <Navbar sobreHero />
       
       <main className="flex-1">
         <Hero />

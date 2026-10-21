@@ -1,3 +1,4 @@
+import { useEscape } from "../../../hooks/useEscape";
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import type { Turno } from "../hooks/useAgenda";
@@ -9,6 +10,7 @@ interface EstadoTurnoModalProps {
 }
 
 export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalProps) {
+  useEscape(onClose);
   const [estado, setEstado] = useState(turno.estado);
   const [motivo, setMotivo] = useState("");
   const [saving, setSaving] = useState(false);
@@ -43,12 +45,12 @@ export function EstadoTurnoModal({ turno, onClose, onSave }: EstadoTurnoModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#121212] shadow-2xl overflow-hidden flex flex-col">
+      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl border border-white/10 bg-[#121212] shadow-2xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-[#1a1a1a]">
           <h2 className="text-lg font-bold font-[var(--font-display)] text-white">
             Cambiar Estado del Turno
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button type="button" onClick={onClose} aria-label="Cerrar" className="text-gray-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>

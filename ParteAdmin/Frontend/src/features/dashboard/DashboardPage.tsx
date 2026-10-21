@@ -3,7 +3,7 @@ import { useDashboardStats } from "./useDashboardStats";
 import type { EstadoTurno } from "../../types/database.types";
 
 import { useAuth } from "../../features/auth/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 export function DashboardPage() {
   const { profile } = useAuth();
@@ -43,7 +43,7 @@ export function DashboardPage() {
       </div>
 
       {/* KPI Widgets */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Turnos hoy" value={turnosHoy} />
         <KpiCard label="Pendientes" value={pendientes} />
         <KpiCard label="Confirmados" value={stats.confirmados ?? 0} />
@@ -59,9 +59,9 @@ export function DashboardPage() {
         <div className="col-span-2 rounded-2xl border border-white/5 bg-[#1a1a1a] shadow-lg">
           <div className="flex items-center justify-between border-b border-white/5 p-5">
             <h2 className="text-lg font-semibold text-white font-[var(--font-display)]">Próximos Turnos (Hoy)</h2>
-            <button className="text-sm font-medium text-[#E53935] hover:text-[#EF5350] transition-colors flex items-center gap-1">
-              Ver agenda <ArrowRight size={16} />
-            </button>
+            <Link to="/agenda" className="text-sm font-medium text-[#E53935] hover:text-[#EF5350] transition-colors flex items-center gap-1">
+              Ver agenda <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
           
           <div className="p-0">

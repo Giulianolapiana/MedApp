@@ -51,7 +51,7 @@ export function ReservaPage() {
 
           {/* Progress Indicator */}
           {state.pasoActual < 5 && (
-            <div className="flex items-center justify-between relative">
+            <div role="group" className="relative isolate flex items-center justify-between" aria-label={`Paso ${state.pasoActual} de 4`}>
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-border-soft -z-10 rounded-full"></div>
               <div 
                 className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-brand-500 -z-10 rounded-full transition-all duration-300"
@@ -88,19 +88,19 @@ export function ReservaPage() {
                 <div className="flex flex-col gap-4">
                   {state.especialidad && (
                     <div>
-                      <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Especialidad</span>
+                      <span className="text-sm text-text-muted">Especialidad</span>
                       <p className="text-text-primary font-medium">{state.especialidad.nombre}</p>
                     </div>
                   )}
                   {state.medico && (
                     <div>
-                      <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Profesional</span>
+                      <span className="text-sm text-text-muted">Profesional</span>
                       <p className="text-text-primary font-medium">{state.medico.nombre}</p>
                     </div>
                   )}
                   {state.fecha && (
                     <div>
-                      <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Fecha y Hora</span>
+                      <span className="text-sm text-text-muted">Fecha y hora</span>
                       <p className="text-text-primary font-medium">
                         {state.fecha.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         {state.slotHora ? ` a las ${state.slotHora}hs` : ''}

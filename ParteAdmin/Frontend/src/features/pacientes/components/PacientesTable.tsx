@@ -99,8 +99,9 @@ export function PacientesTable({ pacientes, searchQuery, onSearchChange, onEdit 
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => onEdit(paciente)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                      title="Editar Paciente"
+                      className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      title="Editar paciente"
+                      aria-label={`Editar a ${paciente.nombre_completo}`}
                     >
                       <Edit2 size={16} />
                     </button>

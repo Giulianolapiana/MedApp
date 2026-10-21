@@ -1,34 +1,62 @@
 @import "tailwindcss";
 
-@theme {
-  --color-brand-50: #EFF6FF;
-  --color-brand-100: #DBEAFE;
-  --color-brand-200: #BFDBFE;
-  --color-brand-300: #93C5FD;
-  --color-brand-400: #60A5FA;
-  --color-brand-500: #3B82F6;
-  --color-brand-600: #2563EB;
-  --color-brand-700: #1D4ED8;
-  --color-brand-800: #1E40AF;
-  --color-brand-900: #1E3A8A;
-  
-  --color-surface: #FFFFFF;
-  --color-bg-base: #F8FAFC;
-  
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
-  
-  --color-border-soft: #E2E8F0;
-  
-  --color-success: #10B981;
-  --color-disabled: #CBD5E1;
+/* ======================================================================
+   Portal de pacientes — tokens
+   Petróleo + aqua (turnos libres) + ámbar (tu turno). Tipografía legible
+   para pacientes de cualquier edad: Atkinson Hyperlegible Next en el texto,
+   Bricolage Grotesque en los títulos.
+   ====================================================================== */
 
-  --font-display: 'Sora', sans-serif;
-  --font-sans: 'Inter', sans-serif;
+@theme {
+  --color-brand-50: #ECFAF7;
+  --color-brand-100: #CFF3EC;
+  --color-brand-200: #A0E6D9;
+  --color-brand-300: #67D3C1;
+  --color-brand-400: #2FBEA8;
+  --color-brand-500: #129E8A;
+  --color-brand-600: #0B8273;
+  --color-brand-700: #0B675D;
+  --color-brand-800: #0D514B;
+  --color-brand-900: #0B3B42;
+  --color-brand-950: #072A30;
+
+  --color-signal: #F4B740;
+  --color-signal-soft: #FDF1D6;
+
+  --color-surface: #FFFFFF;
+  --color-bg-base: #F3F6F5;
+
+  --color-text-primary: #0F2427;
+  --color-text-secondary: #46595C;
+  --color-text-muted: #66797B;
+
+  --color-border-soft: #D9E3E1;
+
+  --color-success: #129E8A;
+  --color-disabled: #C5D1CF;
+
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif;
+
+  --animate-palette-in: palette-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-slot-pulse: slot-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes palette-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes slot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(244 183 64 / 0.55); }
+  50% { box-shadow: 0 0 0 6px rgb(244 183 64 / 0); }
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-bg-base);
     color: var(--color-text-primary);
@@ -36,9 +64,39 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    font-weight: 600;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

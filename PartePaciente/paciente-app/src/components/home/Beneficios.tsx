@@ -8,8 +8,8 @@ const BENEFICIOS = [
   },
   {
     icon: ShieldCheck,
-    title: 'Atención profesional',
-    desc: 'Los mejores especialistas a tu disposición para cuidar tu salud.'
+    title: 'Solo horarios libres',
+    desc: 'Ves únicamente los horarios disponibles de cada profesional, sin idas y vueltas.'
   },
   {
     icon: Zap,
@@ -19,7 +19,7 @@ const BENEFICIOS = [
   {
     icon: BellRing,
     title: 'Recordatorios',
-    desc: 'Te avisamos por WhatsApp para que no te olvides de tu cita.'
+    desc: 'El día anterior te escribimos por WhatsApp para confirmar, cancelar o cambiar el turno.'
   }
 ];
 
@@ -28,10 +28,10 @@ export function Beneficios() {
     <section className="py-24 bg-bg-base">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {BENEFICIOS.map((b, i) => (
-            <div key={i} className="flex gap-4">
+          {BENEFICIOS.map((b) => (
+            <div key={b.title} className="flex gap-4">
               <div className="shrink-0 w-12 h-12 rounded-xl bg-white border border-border-soft text-brand-600 flex items-center justify-center shadow-sm">
-                <b.icon size={24} strokeWidth={1.5} />
+                <b.icon size={24} strokeWidth={1.5} aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-text-primary mb-1">{b.title}</h3>

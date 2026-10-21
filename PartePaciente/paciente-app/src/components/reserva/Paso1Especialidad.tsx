@@ -2,21 +2,8 @@ import { useState, useEffect } from 'react';
 import { getEspecialidades } from '../../services/especialidades.service';
 import type { Especialidad } from '../../types';
 import { useReserva } from '../../context/ReservaContext';
-import { Stethoscope, HeartPulse, Baby, Eye, Bone, Activity, Smile } from 'lucide-react';
-
-const getIconForEspecialidad = (nombre: string) => {
-  const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const n = normalize(nombre);
-  
-  if (n.includes('cardiologia')) return HeartPulse;
-  if (n.includes('dermatologia')) return Activity;
-  if (n.includes('pediatria')) return Baby;
-  if (n.includes('ginecologia')) return HeartPulse;
-  if (n.includes('traumatologia')) return Bone;
-  if (n.includes('oftalmologia')) return Eye;
-  if (n.includes('odontologia')) return Smile;
-  return Stethoscope;
-};
+import { Activity } from 'lucide-react';
+import { iconoEspecialidad } from '../../lib/texto';
 
 export function Paso1Especialidad() {
   const { state, setEspecialidad, setPasoActual } = useReserva();
@@ -49,7 +36,7 @@ export function Paso1Especialidad() {
     <div className="p-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {especialidades.map((esp) => {
-          const Icon = getIconForEspecialidad(esp.nombre);
+          const Icon = iconoEspecialidad(esp.nombre);
           const isSelected = state.especialidad?.id === esp.id;
           
           return (

@@ -1,70 +1,73 @@
-import { CalendarCheck, ChevronRight } from 'lucide-react';
+import { lazy, Suspense, useState } from 'react';
+import { CalendarCheck, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { abrirBusqueda } from '../../lib/busqueda';
+import type { SlotSeleccionado } from './three/SlotWeekScene';
+
+// three.js se descarga aparte: el texto y los botones pintan primero.
+const HeroScene = lazy(() => import('./three/HeroScene'));
 
 export function Hero() {
-  return (
-    <section className="relative overflow-hidden bg-brand-900 pt-20 pb-28 text-white">
-      {/* Background decoration with image and overlay */}
-      <div className="absolute inset-0 z-0">
-        <div 
-          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-40 mix-blend-overlay"
-          style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop")' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-900/95 via-brand-900/80 to-brand-800/60"></div>
-      </div>
+  const [slot, setSlot] = useState<SlotSeleccionado | null>(null);
 
-      <div className="container relative z-10 mx-auto px-4 flex flex-col lg:flex-row items-center gap-12">
-        <div className="flex-1 max-w-2xl text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-800/50 border border-brand-700 text-brand-100 font-medium text-sm mb-6 backdrop-blur-sm">
-            <span className="flex h-2 w-2 rounded-full bg-brand-400"></span>
-            Nuevo portal de pacientes
-          </div>
-          
-          <h1 className="text-5xl lg:text-6xl font-display font-bold text-white leading-[1.1] tracking-tight mb-6">
-            Tu salud, en el momento que la <span className="text-brand-300">necesitás.</span>
+  return (
+    <section className="relative overflow-hidden bg-brand-900 text-white">
+      {/* Luz de fondo detrás de la grilla 3D */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(60% 70% at 78% 45%, rgb(18 158 138 / 0.28), transparent 70%), radial-gradient(40% 50% at 10% 100%, rgb(244 183 64 / 0.08), transparent 70%)',
+        }}
+      />
+
+      <div className="container relative mx-auto grid items-center gap-6 px-4 pt-32 pb-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-4 lg:pt-36 lg:pb-16">
+        <div className="max-w-xl">
+          <h1 className="font-display text-[2.6rem] leading-[1.02] font-bold sm:text-6xl lg:text-[4.25rem]">
+            Sacá turno sin llamar al consultorio.
           </h1>
-          
-          <p className="text-lg text-brand-100 mb-10 leading-relaxed max-w-xl mx-auto lg:mx-0">
-            Sacá tu turno médico de forma rápida, simple y sin demoras. Elegí el profesional, el horario que mejor te quede y confirmá en segundos.
+
+          <p className="mt-6 max-w-md text-lg leading-relaxed text-brand-100">
+            Elegí especialidad, profesional y un horario libre. Te mandamos la confirmación por correo y un
+            recordatorio por WhatsApp el día anterior.
           </p>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-            <Link 
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
               to="/reserva"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-brand-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-brand-50 transition-all active:scale-95 shadow-lg shadow-black/20"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-signal px-7 py-4 text-lg font-bold text-brand-950 shadow-[0_10px_30px_-10px_rgb(244_183_64/0.7)] transition-transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              <CalendarCheck size={20} />
-              Sacar turno ahora
+              <CalendarCheck size={20} aria-hidden="true" />
+              Sacar turno
             </Link>
-            <a 
-              href="#especialidades"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-brand-100 hover:text-white px-8 py-4 rounded-full font-medium text-lg transition-colors"
+            <button
+              type="button"
+              onClick={abrirBusqueda}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 px-6 py-4 text-base font-medium text-white transition-colors hover:border-white/50 hover:bg-white/5"
             >
-              Ver especialidades
-              <ChevronRight size={20} />
-            </a>
+              <Search size={18} aria-hidden="true" />
+              Buscar médico o especialidad
+            </button>
           </div>
         </div>
-        
-        <div className="flex-1 w-full max-w-lg lg:max-w-none relative">
-          <div className="relative rounded-2xl bg-white/10 backdrop-blur-md shadow-2xl border border-white/20 p-2 overflow-hidden aspect-[4/3] lg:aspect-square flex items-center justify-center">
-            <div className="relative z-10 w-3/4 h-3/4 bg-white rounded-xl shadow-lg border border-border-soft p-6 flex flex-col gap-4">
-              <div className="h-6 w-1/3 bg-brand-100 rounded-md"></div>
-              <div className="h-4 w-1/2 bg-slate-100 rounded-md"></div>
-              <div className="flex gap-4 mt-4">
-                <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center text-brand-500"><CalendarCheck size={24}/></div>
-                <div className="flex-1 flex flex-col gap-2 justify-center">
-                  <div className="h-3 w-full bg-slate-100 rounded-full"></div>
-                  <div className="h-3 w-2/3 bg-slate-100 rounded-full"></div>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mt-auto">
-                <div className="h-10 rounded-lg bg-brand-50"></div>
-                <div className="h-10 rounded-lg bg-brand-50"></div>
-                <div className="h-10 rounded-lg bg-brand-600"></div>
-              </div>
-            </div>
+
+        <div>
+          <div
+            className="relative h-[300px] sm:h-[400px] lg:h-[500px]"
+            role="img"
+            aria-label="Semana de ejemplo con horarios libres, ocupados y tu turno resaltado"
+          >
+            <Suspense fallback={null}>
+              <HeroScene onSelect={setSlot} />
+            </Suspense>
           </div>
+
+          <p aria-live="polite" className="mt-2 text-sm text-brand-200 lg:text-right">
+            {slot
+              ? `Elegiste el ${slot.dia} a las ${slot.hora}. En la reserva ves los horarios reales.`
+              : 'Semana de ejemplo: tocá un horario libre.'}
+          </p>
         </div>
       </div>
     </section>
